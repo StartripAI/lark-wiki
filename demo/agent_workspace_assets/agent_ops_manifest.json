@@ -1,0 +1,8 @@
+{
+  "asset_key": "LOCAL::demo/agent_workspace_assets/agent_ops_manifest.json",
+  "asset_class": "manifest",
+  "title": "agent_ops_manifest",
+  "remote_url": "https://example.invalid/docx/agent-ops-manifest",
+  "remote_id": "DOC_AGENT_OPS_MANIFEST",
+  "notes": "Synthetic remote mirror binding for the public starter."
+}

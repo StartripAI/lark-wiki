@@ -1,0 +1,12 @@
+[llm]
+provider = "mock"
+model = "gpt-5.4-mini"
+command = ""
+timeout_seconds = 240
+max_assets_per_prompt = 4
+max_chars_per_asset = 3200
+semantic_lint_enabled = true
+
+[projects.agent_workspace]
+wiki_seed_nodes = []
+base_tokens = []

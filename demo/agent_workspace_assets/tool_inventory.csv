@@ -1,0 +1,5 @@
+tool_id,tool_name,owner_surface,role
+AGENT-001,Research Coordinator,local_wiki,Summarize source materials into grounded notes
+TASK-101,Friday Synthesis,lark_project,Turn weekly artifacts into an execution brief
+BASE-201,Ops Registry,lark_base,Store operational rows for runs and issues
+DOC-301,Runbook Mirror,lark_docs,Provide a collaborative reading surface

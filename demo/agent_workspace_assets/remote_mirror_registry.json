@@ -1,0 +1,18 @@
+{
+  "docs": [
+    {
+      "title": "Starter Runbook",
+      "url": "https://example.invalid/wiki/starter-runbook"
+    },
+    {
+      "title": "Weekly Synthesis Board",
+      "url": "https://example.invalid/docx/weekly-synthesis-board"
+    }
+  ],
+  "bases": [
+    {
+      "title": "Ops Registry",
+      "url": "https://example.invalid/base/ops-registry"
+    }
+  ]
+}

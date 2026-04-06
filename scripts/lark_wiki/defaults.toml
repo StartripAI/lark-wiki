@@ -1,0 +1,75 @@
+[paths]
+knowledge_root = "knowledge"
+state_dir = "state"
+state_db = "state/llm_wiki_v1.sqlite"
+readme = "README.md"
+
+[scope]
+allowed_local_suffixes = [".md", ".csv", ".json", ".xlsx", ".sqlite", ".html", ".pdf", ".docx"]
+text_scan_suffixes = [".md", ".csv", ".json", ".html", ".txt"]
+excluded_prefixes = ["knowledge/raw", "knowledge/assets", "knowledge/build", ".git", "__pycache__"]
+
+[portfolio]
+portfolio_key = "portfolio::default"
+portfolio_root_title = "Agent Workspace LLM Wiki"
+default_project_namespace = "project::agent_workspace"
+account_namespace_key = "account"
+shared_namespace_key = "shared"
+inbox_namespace_key = "inbox"
+
+[feishu]
+portfolio_root_node = ""
+ops_base_title = "LLM Wiki Ops"
+lark_wiki_space = "my_library"
+
+[sync]
+markdown_safe_page_types = ["Home", "Index", "Log", "Source", "Concept", "Entity", "Report", "Legacy"]
+
+[llm]
+provider = "disabled"
+model = "gpt-5.4-mini"
+command = ""
+timeout_seconds = 180
+max_assets_per_prompt = 6
+max_chars_per_asset = 3500
+semantic_lint_enabled = true
+
+[namespaces.account]
+display_name = "Portfolio"
+slug = "account"
+kind = "account"
+target_root_title = "Agent Workspace LLM Wiki"
+title_keywords = []
+local_roots = []
+wiki_seed_nodes = []
+base_tokens = []
+
+[namespaces.shared]
+display_name = "Shared"
+slug = "shared"
+kind = "shared"
+target_root_title = "Shared"
+title_keywords = []
+local_roots = []
+wiki_seed_nodes = []
+base_tokens = []
+
+[namespaces.inbox]
+display_name = "Inbox"
+slug = "inbox"
+kind = "inbox"
+target_root_title = "Inbox"
+title_keywords = []
+local_roots = []
+wiki_seed_nodes = []
+base_tokens = []
+
+[projects.agent_workspace]
+display_name = "Agent Workspace"
+slug = "agent_workspace"
+kind = "project"
+target_root_title = "Agent Workspace Starter"
+title_keywords = ["Agent Workspace", "handoff", "ops registry", "runbook"]
+local_roots = ["demo/agent_workspace_assets"]
+wiki_seed_nodes = []
+base_tokens = []
