@@ -1,3 +1,4 @@
+[work_hub]
 namespace_key = "project::work_hub"
 display_name = "Work Hub"
 slug = "work_hub"

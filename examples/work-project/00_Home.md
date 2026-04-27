@@ -1,5 +1,5 @@
 ---
-{"page_id":"home","page_type":"Home","namespace_key":"project::work_hub","source_ids":[],"links":["index"],"sync_mode":"local_only"}
+{"page_id":"project::work_hub::home","title":"Work Hub","page_type":"Home","asset_key":"PAGE::project::work_hub::home","namespace_key":"project::work_hub","portfolio_key":"portfolio::default","source_ids":[],"links_to":["project::work_hub::index"],"sync_mode":"local_only"}
 ---
 # Work Hub
 

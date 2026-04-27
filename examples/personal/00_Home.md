@@ -1,5 +1,5 @@
 ---
-{"page_id":"home","page_type":"Home","namespace_key":"project::personal_kb","source_ids":[],"links":["index"],"sync_mode":"local_only"}
+{"page_id":"project::personal_kb::home","title":"Personal Knowledge Base","page_type":"Home","asset_key":"PAGE::project::personal_kb::home","namespace_key":"project::personal_kb","portfolio_key":"portfolio::default","source_ids":[],"links_to":["project::personal_kb::index"],"sync_mode":"local_only"}
 ---
 # Personal Knowledge Base
 

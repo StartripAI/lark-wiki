@@ -1,3 +1,4 @@
+[personal_kb]
 namespace_key = "project::personal_kb"
 display_name = "Personal Knowledge Base"
 slug = "personal_kb"

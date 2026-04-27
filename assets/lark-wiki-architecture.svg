@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640" role="img" aria-labelledby="title desc">
-  <title id="title">lark-wiki architecture</title>
-  <desc id="desc">A business-style architecture diagram showing personal, work, and corporation knowledge lanes flowing from local Markdown and assets into the lark-wiki compiler, then through lark-cli to Lark Docs, Wiki, Base, and Project.</desc>
+  <title id="title">lark-wiki local-first architecture for Lark and Feishu</title>
+  <desc id="desc">A business-style architecture diagram showing personal, work, and company knowledge lanes flowing from local Markdown and assets into the lark-wiki compiler. The compiler produces pages, asset graphs, lint reports, and optional analysis inputs, then sends approved work surfaces to Lark Docs, Wiki, Base, and Project through lark-cli while keeping local Markdown as the operating rule.</desc>
   <defs>
     <style>
       .bg { fill: #f7f9fb; }
@@ -43,7 +43,7 @@
   <text class="small" x="72" y="284">projects, handoffs, runbooks</text>
 
   <rect class="lane3" x="48" y="338" width="208" height="86" rx="8"/>
-  <text class="label" x="72" y="370">Corporation</text>
+  <text class="label" x="72" y="370">Company</text>
   <text class="small" x="72" y="394">policies, libraries, standards</text>
 
   <rect class="panel" x="306" y="120" width="214" height="302" rx="10"/>
@@ -67,7 +67,7 @@
   <text class="small" x="600" y="324">edges, lineage, query</text>
 
   <rect class="green" x="570" y="366" width="210" height="62" rx="8"/>
-  <text class="label" x="600" y="396">Optional intelligence</text>
+  <text class="label" x="600" y="396">Optional analysis</text>
   <text class="small" x="600" y="414">LLM, graph, research sidecars</text>
 
   <rect class="core2" x="832" y="170" width="206" height="76" rx="10"/>

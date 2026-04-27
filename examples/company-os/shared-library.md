@@ -1,5 +1,5 @@
 ---
-{"page_id":"shared-library","page_type":"Concept","namespace_key":"shared","source_ids":[],"links":[],"sync_mode":"local_only"}
+{"page_id":"shared::shared-library","title":"Shared Library","page_type":"Concept","asset_key":"PAGE::shared::shared-library","namespace_key":"shared","portfolio_key":"portfolio::company","source_ids":[],"links_to":[],"sync_mode":"local_only"}
 ---
 # Shared Library
 
