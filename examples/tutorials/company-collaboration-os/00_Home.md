@@ -3,4 +3,4 @@
 ---
 # Company Collaboration OS
 
-Use this page as a starting point for shared standards, operating records, and cross-team knowledge promotion.
+Use this page as a starting point for shared standards, operating records, and useful knowledge from different teams.

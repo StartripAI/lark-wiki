@@ -2,7 +2,7 @@
 
 Use this profile for a team project, client workspace, delivery room, or internal initiative.
 
-The default flow keeps local Markdown canonical and uses Lark/Feishu Docs, Wiki, Base, and Project as work surfaces.
+The default flow keeps the main Markdown pages local and uses Lark/Feishu Docs, Wiki, Base, and Project as work surfaces.
 
 Run the discovery commands after `lark-cli auth login`. If no remote workspace is ready, skip discovery and start with `bootstrap_namespace`.
 

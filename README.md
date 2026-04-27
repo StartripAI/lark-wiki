@@ -2,9 +2,9 @@
 
 > 🧠 面向 Lark/Feishu 的 `lark-cli`-first LLM Wiki：本地 Markdown 管理知识源，飞书承载协作、检索和团队使用。
 
-`lark-wiki` 借鉴 Karpathy-style LLM wiki 的知识组织理念，但不是复制某个具体产品。它把这种“可检索、可综合、可追溯”的知识库形态落到 Lark/Feishu 工作流里：本地 Markdown 是权威来源，飞书 Docs / Wiki / Base 是协作界面，LLM、论文证据工作台和知识关系图是核心增强组件。
+`lark-wiki` 借鉴 Karpathy-style LLM wiki 的知识组织理念，但不是复制某个具体产品。它把“能问、能找、能总结”的个人知识库，变成能在 Lark/Feishu 里真正协作的工作系统：本地 Markdown 放原文和最终版本，飞书 Docs / Wiki / Base 负责协作，LLM、论文工作台和知识关系图负责把内容变得更好用。
 
-它的目标是成为最好用的飞书个人知识库底座，同时也能自然扩展到工作项目和公司协作场景。和 Obsidian 这类个人笔记软件不同，`lark-wiki` 把协作、权限、表格化运营和团队同步放在飞书侧，通过飞书文档，飞书表格，多维表格，甚至飞书项目，消息等等，把可追溯的源文件和编译流程保留在本地。
+它的目标是成为最好用的飞书个人知识库底座，同时也能自然扩展到工作项目和公司协作场景。和 Obsidian 这类个人笔记软件不同，`lark-wiki` 把协作、权限、表格、项目和消息放在飞书侧，把原始资料和整理后的页面留在本地。
 
 ![Local Markdown and assets flow through lark-wiki and lark-cli into Lark and Feishu Docs, Wiki, Base, and Project, organized across personal, work, and corporation lanes.](assets/lark-wiki-readme-hero.png)
 
@@ -15,7 +15,7 @@
 ```text
 Local Markdown + Assets
         -> lark-wiki compiler
-        -> asset graph / lint / reviewed synthesis
+        -> graph / lint / summaries
         -> lark-cli
         -> Lark Docs / Wiki / Base work surfaces
 ```
@@ -24,19 +24,19 @@ Local Markdown + Assets
 
 | 原则 | 含义 |
 | --- | --- |
-| Local-first | `knowledge/wiki_src/**` 存放权威页面，本地可审计、可回滚 |
+| Local-first | `knowledge/wiki_src/**` 存放原文和整理后的页面，出问题可以改回去 |
 | Lark-native | Docs/Wiki/Base 通过 `lark-cli` 接入，适合国内个人和团队工作流 |
-| Source-grounded | LLM 只基于已登记来源做总结、提示矛盾和生成 review input |
-| Review before promotion | 论文证据、知识关系图、远端 drift 都先进入检查，再进入正式页面 |
+| Source-based | LLM 只看你给它的资料，帮你总结、找冲突、补遗漏 |
+| Human in control | 论文、关系图和远端改动都先给人看，再放进正式页面 |
 
 ## 🚀 真正拉开差距的组件
 
-`lark-wiki` 不是只把一堆 Markdown 喂给 LLM。真正强的是把“证据”和“关系”做成工程化组件，让个人知识库可以直接长成团队可用的工作系统。
+`lark-wiki` 不是只把一堆 Markdown 喂给 LLM。真正强的是两件事：把论文结论讲清楚，把知识之间的关系连起来。这样个人知识库才能直接长成团队能用的工作系统。
 
 | Component | 为什么重要 |
 | --- | --- |
-| Paper Evidence Workbench | 把论文、阅读笔记、claim register、evidence review 串成可审查链路。它不只是总结 paper，而是沉淀“哪些结论来自哪些证据、哪些还没被确认”。 |
-| Knowledge Relation Map | 用 page/source edges、asset lineage、cross-namespace references 把文档、来源、页面和项目关系连起来。知识不再是散落文档，而是可追踪、可查询、可治理的工作网络。 |
+| Paper Evidence Workbench | 不只是总结 paper，而是帮你记清楚：这篇论文说了什么、支持哪个结论、哪些地方还不确定。 |
+| Knowledge Relation Map | 把文档、来源、页面和项目连起来。知识不再是散落文件，而是一张能搜索、能跳转、能复用的网络。 |
 
 这两块能力让 `lark-wiki` 超出“个人 LLM wiki demo”：它能服务个人研究，也能支撑项目交付、公司 Wiki、Base-backed ops 和多人协作。
 
@@ -52,7 +52,7 @@ Local Markdown + Assets
 
 | Namespace | 用途 |
 | --- | --- |
-| `account` | portfolio home、总索引、治理页、运行日志 |
+| `account` | portfolio home、总索引、管理页、运行日志 |
 | `project::<slug>` | 个人、项目、团队、客户或部门知识空间 |
 | `shared` | 已审核的共享规则、术语、标准和模板 |
 | `inbox` | 未分类资产的暂存区 |
@@ -128,10 +128,10 @@ Command safety:
 
 | Tutorial | 用途 |
 | --- | --- |
-| [Personal Life OS](examples/tutorials/personal-life-os/README.md) | 个人笔记、阅读、决策和私人到共享的 promotion |
+| [Personal Life OS](examples/tutorials/personal-life-os/README.md) | 个人笔记、阅读、决策和把好内容分享给团队 |
 | [Work Delivery Room](examples/tutorials/work-delivery-room/README.md) | 项目交付、handoff、runbook、风险和状态同步 |
 | [Company Collaboration OS](examples/tutorials/company-collaboration-os/README.md) | 公司协作 Wiki、共享标准和 Base-backed ops |
-| [Research Paper Workbench](examples/tutorials/research-paper-workbench/README.md) | 论文输入、claim register、证据 review 和 related-work map |
+| [Research Paper Workbench](examples/tutorials/research-paper-workbench/README.md) | 论文阅读、结论记录、证据整理和相关工作地图 |
 
 已有轻量 starter：
 
@@ -162,7 +162,7 @@ Command safety:
 assets/                         README visual assets
 demo/agent_workspace_assets/     synthetic demo sources
 examples/                        starters, tutorials, and recipes
-knowledge/wiki_src/              canonical wiki pages
+knowledge/wiki_src/              wiki source pages
 scripts/lark_wiki.py             public CLI entrypoint
 scripts/lark_wiki/               compiler, sync, lint, discovery
 tests/                           public starter tests
@@ -211,7 +211,7 @@ Provider modes:
 | `disabled` | deterministic compile and sync only |
 | `mock` | local tests and CI |
 | `command` | call your own JSON command provider |
-| `codex_exec` | source-grounded synthesis through `codex exec` |
+| `codex_exec` | summarize supplied sources through `codex exec` |
 | `auto` | prefer `codex`, then command, else disabled |
 
 ## 🔌 Optional Analysis
@@ -221,9 +221,9 @@ The core path only needs Python and `lark-cli`. Optional analysis capabilities a
 | Capability | Role |
 | --- | --- |
 | `@larksuite/cli@1.0.19` | required platform connector |
-| Knowledge relation map | page/source edges, asset lineage, structure hints |
-| Paper evidence workspace | reviewed research notes, claim tracking, evidence tables |
-| LLM provider | source-grounded synthesis and semantic lint |
+| Knowledge relation map | connect pages, sources, projects, and reusable ideas |
+| Paper evidence workspace | paper notes, claim notes, evidence tables |
+| LLM provider | summarize supplied sources and flag possible conflicts |
 
 ## 🧪 Verify
 

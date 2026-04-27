@@ -1,6 +1,6 @@
 # Personal Life OS Tutorial
 
-Use this tutorial for a personal knowledge base that keeps notes, reading, decisions, and reusable snippets in one local-first workflow.
+Use this tutorial for a personal knowledge base that keeps notes, reading, decisions, and reusable snippets in one simple workflow.
 
 ## Setup
 
@@ -21,7 +21,7 @@ python3 scripts/lark_wiki.py lint --namespace project::personal_life_os
 - Put private notes under `docs/personal/`.
 - Keep reading notes in `reading/reading-log.md`.
 - Keep decisions in `decisions/decision-journal.md`.
-- Promote only reviewed snippets into `shared`.
+- Move only useful, cleaned-up snippets into `shared`.
 
 ## Expected output
 

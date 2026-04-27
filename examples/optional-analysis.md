@@ -1,10 +1,10 @@
 # Optional Analysis Capabilities
 
-The core `lark-wiki` workflow is local Markdown plus `lark-cli`. The strongest analysis layer is the combination of a paper evidence workbench and a knowledge relation map: one tracks evidence, the other tracks structure.
+The core `lark-wiki` workflow is local Markdown plus `lark-cli`. The strongest analysis layer is simple: one part helps you understand papers, the other connects related knowledge.
 
 ## LLM Provider
 
-Use an LLM provider for source-grounded synthesis and semantic linting.
+Use an LLM provider to summarize supplied sources and flag possible conflicts.
 
 ```toml
 [llm]
@@ -16,8 +16,8 @@ semantic_lint_enabled = true
 
 ## Knowledge Relation Map
 
-Use generated asset graphs, page/source edges, lineage, orphan-page checks, and cross-namespace references to turn scattered documents into a navigable work network. Relation hints are powerful review inputs, not authority.
+Use generated links between pages, sources, projects, and reusable ideas to turn scattered documents into a navigable knowledge map.
 
 ## Paper Evidence Workspace
 
-Use reviewed research notes, claim registers, evidence tables, and related-work maps to organize papers. The goal is not “summarize a PDF”; the goal is to preserve why a claim is believable, where it came from, and whether it is ready to promote into canonical pages.
+Use paper notes, claim notes, evidence tables, and related-work maps to organize research. The goal is not “summarize a PDF”; the goal is to remember what each paper actually supports and what is still uncertain.

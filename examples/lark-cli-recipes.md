@@ -23,7 +23,7 @@ lark-cli wiki spaces list --help
 lark-cli wiki nodes list --help
 ```
 
-`lark-wiki` wraps these into discovery, canonical Markdown compilation, and safe sync workflows.
+`lark-wiki` wraps these into discovery, Markdown page building, and safe sync workflows.
 
 ## Base
 

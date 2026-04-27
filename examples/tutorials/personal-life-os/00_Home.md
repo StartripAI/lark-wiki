@@ -3,10 +3,10 @@
 ---
 # Personal Life OS
 
-Use this page as your landing surface for notes, reading, decisions, and private-to-shared promotion.
+Use this page as your landing surface for notes, reading, decisions, and ideas worth sharing.
 
 ## Operating rhythm
 
 - Capture quickly in local Markdown.
-- Review weekly before promotion.
+- Clean up useful notes each week.
 - Keep shared pages small and reusable.

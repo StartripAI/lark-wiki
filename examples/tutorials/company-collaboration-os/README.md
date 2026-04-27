@@ -1,6 +1,6 @@
 # Company Collaboration OS Tutorial
 
-Use this tutorial for company-level collaboration: shared standards, team namespaces, project portfolio views, and Base-backed operating records.
+Use this tutorial for company-level collaboration: shared standards, team spaces, project views, and Base-backed operating records.
 
 ## Setup
 
@@ -28,4 +28,4 @@ python3 scripts/lark_wiki.py sync_ops_base
 
 - Put approved rules in `standards/shared-standard.md`.
 - Keep operating records in `ops/ops-records.md`.
-- Promote project knowledge into `shared` only after review.
+- Move project knowledge into `shared` only after the team agrees it is reusable.
