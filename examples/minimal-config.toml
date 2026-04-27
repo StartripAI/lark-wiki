@@ -12,7 +12,7 @@ semantic_lint_enabled = true
 
 [runtime]
 lark_cli_version = "1.0.19"
-optional_sidecars = "user_configured"
+optional_analysis = "user_configured"
 
 [projects.personal_kb]
 namespace_key = "project::personal_kb"

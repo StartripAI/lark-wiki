@@ -181,8 +181,6 @@ def main() -> None:
         }
         result = command_handlers[args.command](conn, config, args)
         finish_run(conn, run_id, status="success", summary=result)
-        if args.command == "sync_ops_base":
-            result = sync_ops_base(conn, config)
         print(json_dumps({"ok": True, "command": args.command, "namespace_key": namespace_key, "result": result}))
     except Exception as exc:
         finish_run(conn, run_id, status="failed", error_text=str(exc), summary={"command": args.command, "namespace_key": namespace_key})

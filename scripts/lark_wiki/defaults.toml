@@ -36,7 +36,7 @@ semantic_lint_enabled = true
 
 [runtime]
 lark_cli_version = "1.0.19"
-optional_sidecars = "user_configured"
+optional_analysis = "user_configured"
 
 [namespaces.account]
 display_name = "Portfolio"

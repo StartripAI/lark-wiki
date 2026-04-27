@@ -1,76 +1,78 @@
 # lark-wiki
 
-> 🚀 `lark-cli` 优先的本地知识库：适合个人笔记、工作项目和团队运营 Wiki。
+> 🧠 面向 Lark/Feishu 的 `lark-cli`-first LLM Wiki：本地 Markdown 管理知识源，飞书承载协作、检索和团队使用。
 
-`lark-wiki` 把本地 Markdown、文件资产和 Lark/Feishu 工作面连成一套可运行的知识库。你在本地维护权威内容，用 `lark-cli` 同步到 Docs / Wiki / Base / Project，再用 lint、graph 和可选 LLM 层保持内容可追踪、可审计、可协作。
+`lark-wiki` 借鉴 Karpathy-style LLM wiki 的知识组织理念，但不是复制某个具体产品。它把这种“可检索、可综合、可追溯”的知识库形态落到 Lark/Feishu 工作流里：本地 Markdown 是权威来源，飞书 Docs / Wiki / Base 是协作界面，LLM、论文证据整理和知识关系图都是可选增强层。
 
-本地 Markdown 是权威来源，Lark/Feishu 是协作界面。
+它的目标是成为最好用的飞书个人知识库底座，同时也能自然扩展到工作项目和公司协作场景。和 Obsidian 这类个人笔记软件不同，`lark-wiki` 把协作、权限、表格化运营和团队同步放在飞书侧，把可审计的源文件和编译流程保留在本地。
 
-![Diagram showing local Markdown and assets flowing through lark-wiki and lark-cli into Lark Docs, Wiki, Base, and Project](assets/lark-wiki-architecture.svg)
+![Local Markdown and assets flow through lark-wiki and lark-cli into Lark and Feishu Docs, Wiki, Base, and Project, organized across personal, work, and corporation lanes.](assets/lark-wiki-readme-hero.png)
 
 ## ✨ 为什么需要它
 
-很多知识库最后会散成三份：本地文档、飞书文档、表格和项目管理里的状态。`lark-wiki` 的目标是把它们统一到一条清晰链路中：
+很多知识库会散成三份：本地文档、飞书文档、表格和项目管理里的状态。`lark-wiki` 把它们统一到一条清晰链路中：
 
 ```text
 Local Markdown + Assets
         -> lark-wiki compiler
-        -> graph / lint / optional LLM
-        -> Lark Docs / Wiki / Base / Project through lark-cli
+        -> asset graph / lint / reviewed synthesis
+        -> lark-cli
+        -> Lark Docs / Wiki / Base work surfaces
 ```
 
-它适合三类场景：
+核心原则很简单：
+
+| 原则 | 含义 |
+| --- | --- |
+| Local-first | `knowledge/wiki_src/**` 存放权威页面，本地可审计、可回滚 |
+| Lark-native | Docs/Wiki/Base 通过 `lark-cli` 接入，适合国内个人和团队工作流 |
+| Source-grounded | LLM 只基于已登记来源做总结、提示矛盾和生成 review input |
+| Review before promotion | 论文证据、知识关系图、远端 drift 都先进入检查，再进入正式页面 |
+
+## 🧩 适合谁
 
 | 场景 | 适合内容 |
 | --- | --- |
-| 🧠 个人知识库 | 笔记、研究、决策、阅读记录 |
-| 🧰 工作/项目知识库 | 交接、Runbook、文档、状态看板 |
-| 🏢 团队运营 Wiki | 规则、制度、流程库、Base 支撑的运营数据 |
-
-## 🧩 核心思路
-
-- **Local-first**: `knowledge/wiki_src/**` 存放权威页面。
-- **Lark-native**: `lark-cli` 连接 Docs、Wiki、Base、Project、Drive。
-- **Namespace isolation**: personal/work/company 都可以用 `project::<slug>` 隔离。
-- **Review before promotion**: remote drift, shared truth, generated summaries 都要可检查。
-- **Optional analysis**: LLM、graph analysis、research evidence 都是增强层，不替代 source。
+| 🧠 个人知识库 | 笔记、阅读、论文、决策、灵感、生活/工作操作系统 |
+| 🧰 工作项目 Wiki | Runbook、handoff、会议纪要、状态同步、风险记录 |
+| 🏢 公司协作 Wiki | 共享制度、流程库、项目组合视图、Base 支撑的运营台账 |
 
 默认命名空间：
 
-| Namespace | Meaning |
+| Namespace | 用途 |
 | --- | --- |
-| `account` | portfolio home, index, governance, run log |
-| `project::<slug>` | personal, team, client, department, or company workspace |
-| `shared` | approved shared libraries, glossary, rules |
-| `inbox` | holding area for unclassified assets |
+| `account` | portfolio home、总索引、治理页、运行日志 |
+| `project::<slug>` | 个人、项目、团队、客户或部门知识空间 |
+| `shared` | 已审核的共享规则、术语、标准和模板 |
+| `inbox` | 未分类资产的暂存区 |
 
 ## ⚡ Quickstart
 
-### 1. Try the local demo first
+### 1. 本地跑通
 
-No remote auth is required for the local starter flow.
+这个流程不需要远端授权，会写入本地 `state/` 和 `knowledge/build/`。
 
 ```bash
 python3 scripts/lark_wiki.py --help
 python3 scripts/lark_wiki.py bootstrap_portfolio
-python3 scripts/lark_wiki.py bootstrap_namespace --namespace project::agent_workspace
 python3 scripts/lark_wiki.py discover_local_repo_assets
 python3 scripts/lark_wiki.py classify_assets
 python3 scripts/lark_wiki.py ingest --namespace project::agent_workspace
 python3 scripts/lark_wiki.py build_graph --namespace project::agent_workspace
 python3 scripts/lark_wiki.py lint --namespace project::agent_workspace
+python3 scripts/lark_wiki.py query --namespace project::agent_workspace --query handoff
 ```
 
-### 2. Create local config
+### 2. 配置本地 workspace
 
 ```bash
 mkdir -p state
 cp examples/llm_wiki_v1.local.example.toml state/llm_wiki_v1.local.toml
 ```
 
-Put credentials, seed nodes, Base tokens, and local paths only under `state/`. It is ignored by git.
+把凭据、seed nodes、Base identifiers 和本机路径只放在 `state/`。该目录默认不进入 git。
 
-### 3. Connect Lark/Feishu when ready
+### 3. 连接 Lark/Feishu
 
 ```bash
 npm install -g @larksuite/cli@1.0.19
@@ -85,13 +87,20 @@ Optional:
 npx skills add https://github.com/larksuite/cli -y -g
 ```
 
-### 4. Add remote discovery and sync
+### 4. 远端发现与同步
+
+先同步 account/root，再同步 project，避免 project push 缺少父级 Wiki root。
 
 ```bash
 python3 scripts/lark_wiki.py upgrade_preflight
 python3 scripts/lark_wiki.py discover_feishu_docs
 python3 scripts/lark_wiki.py discover_feishu_bases
-python3 scripts/lark_wiki.py discover_feishu_project
+python3 scripts/lark_wiki.py classify_assets
+python3 scripts/lark_wiki.py ingest --namespace account
+python3 scripts/lark_wiki.py build_graph --namespace account
+python3 scripts/lark_wiki.py sync_push --namespace account --limit 1
+python3 scripts/lark_wiki.py ingest --namespace project::agent_workspace
+python3 scripts/lark_wiki.py build_graph --namespace project::agent_workspace
 python3 scripts/lark_wiki.py sync_push --namespace project::agent_workspace --limit 1
 ```
 
@@ -99,66 +108,49 @@ Command safety:
 
 | Type | Commands |
 | --- | --- |
-| Local-only | `bootstrap_namespace`, `bootstrap_portfolio`, `discover_local_repo_assets`, `classify_assets`, `ingest`, `build_graph`, `lint`, `query --query <text>` |
-| Remote read | `upgrade_preflight`, `discover_feishu_docs`, `discover_feishu_bases`, `discover_feishu_project`, `sync_pull` |
+| Writes local state, no remote API | `bootstrap_portfolio`, `bootstrap_namespace`, `discover_local_repo_assets`, `classify_assets`, `ingest`, `build_graph`, `query --query <text>` |
+| Usually local, may fetch bound mirrors | `lint` |
+| Remote read + local snapshot | `upgrade_preflight`, `discover_feishu_docs`, `discover_feishu_bases`, `discover_feishu_project`, `sync_pull` |
 | Remote write | `sync_push`, `bootstrap_ops_base`, `sync_ops_base` |
 
-## 🛠️ Common Workflows
+## 🛠️ 场景教程
 
-### Personal KB
+| Tutorial | 用途 |
+| --- | --- |
+| [Personal Life OS](examples/tutorials/personal-life-os/README.md) | 个人笔记、阅读、决策和私人到共享的 promotion |
+| [Work Delivery Room](examples/tutorials/work-delivery-room/README.md) | 项目交付、handoff、runbook、风险和状态同步 |
+| [Company Collaboration OS](examples/tutorials/company-collaboration-os/README.md) | 公司协作 Wiki、共享标准和 Base-backed ops |
+| [Research Paper Workbench](examples/tutorials/research-paper-workbench/README.md) | 论文输入、claim register、证据 review 和 related-work map |
 
-Start from `examples/personal/`:
+已有轻量 starter：
 
-```bash
-mkdir -p state/llm_wiki.projects knowledge/wiki_src/projects/personal_kb
-cp examples/personal/llm_wiki.projects.personal_kb.toml state/llm_wiki.projects/personal_kb.toml
-python3 scripts/lark_wiki.py discover_local_repo_assets
-python3 scripts/lark_wiki.py classify_assets
-python3 scripts/lark_wiki.py bootstrap_namespace --namespace project::personal_kb
-cp examples/personal/00_Home.md knowledge/wiki_src/projects/personal_kb/00_Home.md
-python3 scripts/lark_wiki.py build_graph --namespace project::personal_kb
-python3 scripts/lark_wiki.py lint --namespace project::personal_kb
-```
+| Starter | 用途 |
+| --- | --- |
+| [Personal KB](examples/personal/README.md) | 最小个人知识库 |
+| [Work Project](examples/work-project/README.md) | 最小项目知识库 |
+| [Company OS](examples/company-os/README.md) | account/shared 起步配置 |
+| [lark-cli recipes](examples/lark-cli-recipes.md) | 底层平台命令速查 |
+| [Optional analysis](examples/optional-analysis.md) | LLM、论文证据整理和知识关系图能力说明 |
 
-### Work Project
+## 🧱 技术架构
 
-Start from `examples/work-project/`:
+![Technical architecture diagram showing Local Markdown and assets, lark-wiki compiler, optional analysis, lark-cli, and Lark Docs, Wiki, Base, and Project surfaces.](assets/lark-wiki-architecture.svg)
 
-Run discovery after `lark-cli auth login`. For a local-only dry run, skip the two discovery commands and start with `bootstrap_namespace`.
+当前 public CLI 能力边界：
 
-```bash
-mkdir -p state/llm_wiki.projects knowledge/wiki_src/projects/work_hub
-cp examples/work-project/llm_wiki.projects.work_hub.toml state/llm_wiki.projects/work_hub.toml
-python3 scripts/lark_wiki.py discover_feishu_docs
-python3 scripts/lark_wiki.py discover_feishu_bases
-python3 scripts/lark_wiki.py classify_assets
-python3 scripts/lark_wiki.py bootstrap_namespace --namespace project::work_hub
-cp examples/work-project/00_Home.md knowledge/wiki_src/projects/work_hub/00_Home.md
-python3 scripts/lark_wiki.py build_graph --namespace project::work_hub
-python3 scripts/lark_wiki.py lint --namespace project::work_hub
-```
-
-### Team Operating Wiki
-
-Start from `examples/company-os/`:
-
-```bash
-mkdir -p state knowledge/wiki_src/shared
-cp examples/company-os/llm_wiki.portfolio.toml state/llm_wiki.portfolio.toml
-cp examples/company-os/shared-library.md knowledge/wiki_src/shared/shared-library.md
-python3 scripts/lark_wiki.py bootstrap_portfolio
-python3 scripts/lark_wiki.py ingest --namespace account
-python3 scripts/lark_wiki.py ingest --namespace shared
-python3 scripts/lark_wiki.py bootstrap_ops_base
-python3 scripts/lark_wiki.py sync_ops_base
-```
+| Surface | 当前支持 |
+| --- | --- |
+| Docs/Wiki | 通过 `lark-cli` 做 search/fetch/create/update 和 Wiki node 发现/同步 |
+| Base | 发现 table/field/record，Ops Base 可镜像 sources/pages/runs/issues/merge queue |
+| Project | 支持配置快照和本地 project sync-state 发现，不承诺 live Project API sync |
+| Drive | 在 `upgrade_preflight` 中检查平台能力，当前不作为核心同步命令 |
 
 ## 📁 Repository Map
 
 ```text
-assets/                         README diagram
+assets/                         README visual assets
 demo/agent_workspace_assets/     synthetic demo sources
-examples/                        starter profiles and recipes
+examples/                        starters, tutorials, and recipes
 knowledge/wiki_src/              canonical wiki pages
 scripts/lark_wiki.py             public CLI entrypoint
 scripts/lark_wiki/               compiler, sync, lint, discovery
@@ -211,18 +203,16 @@ Provider modes:
 | `codex_exec` | source-grounded synthesis through `codex exec` |
 | `auto` | prefer `codex`, then command, else disabled |
 
-## 🔌 Optional Integrations
+## 🔌 Optional Analysis
 
-The core path only needs Python and `lark-cli`. Optional sidecars are user-configured per workspace.
+The core path only needs Python and `lark-cli`. Optional analysis capabilities are workspace-controlled and never replace reviewed pages.
 
-| Package | Role |
+| Capability | Role |
 | --- | --- |
 | `@larksuite/cli@1.0.19` | required platform connector |
-| user-provided graph analysis sidecar | optional structure discovery |
-| user-provided research evidence sidecar | optional evidence collection |
-| LLM provider | optional synthesis and semantic lint |
-
-Sidecar outputs are review inputs. They do not define the source of truth.
+| Knowledge relation map | page/source edges, asset lineage, structure hints |
+| Paper evidence workspace | reviewed research notes, claim tracking, evidence tables |
+| LLM provider | source-grounded synthesis and semantic lint |
 
 ## 🧪 Verify
 
@@ -274,7 +264,6 @@ upgrade_preflight
 ## 🧭 Roadmap
 
 - Installable `lark-wiki` console command.
-- More starter profiles for teams, departments, and client workspaces.
-- Guided first-sync docs with screenshots.
-- Easier optional sidecar setup.
+- More guided first-sync docs with screenshots.
 - More practical templates for personal, work, and team knowledge systems.
+- Clearer setup for optional paper evidence and knowledge relation workflows.
