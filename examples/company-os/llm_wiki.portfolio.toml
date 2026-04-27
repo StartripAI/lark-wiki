@@ -1,0 +1,23 @@
+[portfolio]
+portfolio_key = "portfolio::company"
+portfolio_root_title = "Company Operating Wiki"
+default_project_namespace = "project::company_os"
+account_namespace_key = "account"
+shared_namespace_key = "shared"
+inbox_namespace_key = "inbox"
+
+[feishu]
+portfolio_root_node = ""
+ops_base_title = "Company Wiki Ops"
+lark_wiki_space = "my_library"
+
+[projects.company_os]
+namespace_key = "project::company_os"
+display_name = "Company Operating System"
+slug = "company_os"
+kind = "project"
+target_root_title = "Company Operating Wiki"
+title_keywords = ["company", "policy", "standard", "operating model"]
+local_roots = ["docs/company", "knowledge/wiki_src/shared"]
+wiki_seed_nodes = []
+base_tokens = []

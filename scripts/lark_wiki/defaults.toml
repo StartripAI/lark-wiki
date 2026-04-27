@@ -34,6 +34,11 @@ max_assets_per_prompt = 6
 max_chars_per_asset = 3500
 semantic_lint_enabled = true
 
+[runtime]
+lark_cli_version = "1.0.19"
+graph_analysis_sidecar_version = "graphifyy==0.5.0"
+research_evidence_sidecar_version = "deepxiv-sdk==0.2.5"
+
 [namespaces.account]
 display_name = "Portfolio"
 slug = "account"
