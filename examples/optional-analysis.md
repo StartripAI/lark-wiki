@@ -1,6 +1,6 @@
 # Optional Analysis Capabilities
 
-The core `lark-wiki` workflow is local Markdown plus `lark-cli`. Optional analysis capabilities are workspace-controlled review inputs and should not replace canonical pages or human approval.
+The core `lark-wiki` workflow is local Markdown plus `lark-cli`. The strongest analysis layer is the combination of a paper evidence workbench and a knowledge relation map: one tracks evidence, the other tracks structure.
 
 ## LLM Provider
 
@@ -16,8 +16,8 @@ semantic_lint_enabled = true
 
 ## Knowledge Relation Map
 
-Use the generated asset graph and page/source edges to inspect structure, lineage, orphan pages, and cross-namespace references. Treat relation hints as review inputs, not authority.
+Use generated asset graphs, page/source edges, lineage, orphan-page checks, and cross-namespace references to turn scattered documents into a navigable work network. Relation hints are powerful review inputs, not authority.
 
 ## Paper Evidence Workspace
 
-Use reviewed research notes, claim registers, evidence tables, and related-work maps to organize papers. Promote only human-reviewed evidence into canonical pages.
+Use reviewed research notes, claim registers, evidence tables, and related-work maps to organize papers. The goal is not “summarize a PDF”; the goal is to preserve why a claim is believable, where it came from, and whether it is ready to promote into canonical pages.

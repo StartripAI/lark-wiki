@@ -2,7 +2,7 @@
 
 > 🧠 面向 Lark/Feishu 的 `lark-cli`-first LLM Wiki：本地 Markdown 管理知识源，飞书承载协作、检索和团队使用。
 
-`lark-wiki` 借鉴 Karpathy-style LLM wiki 的知识组织理念。它把这种“可检索、可综合、可追溯”的知识库形态落到 Lark/Feishu 工作流里：本地 Markdown 是权威来源，飞书 Docs / Wiki / Base 是协作界面，LLM、论文证据整理和知识关系图都是可选增强层。
+`lark-wiki` 借鉴 Karpathy-style LLM wiki 的知识组织理念，但不是复制某个具体产品。它把这种“可检索、可综合、可追溯”的知识库形态落到 Lark/Feishu 工作流里：本地 Markdown 是权威来源，飞书 Docs / Wiki / Base 是协作界面，LLM、论文证据工作台和知识关系图是核心增强组件。
 
 它的目标是成为最好用的飞书个人知识库底座，同时也能自然扩展到工作项目和公司协作场景。和 Obsidian 这类个人笔记软件不同，`lark-wiki` 把协作、权限、表格化运营和团队同步放在飞书侧，通过飞书文档，飞书表格，多维表格，甚至飞书项目，消息等等，把可追溯的源文件和编译流程保留在本地。
 
@@ -28,6 +28,17 @@ Local Markdown + Assets
 | Lark-native | Docs/Wiki/Base 通过 `lark-cli` 接入，适合国内个人和团队工作流 |
 | Source-grounded | LLM 只基于已登记来源做总结、提示矛盾和生成 review input |
 | Review before promotion | 论文证据、知识关系图、远端 drift 都先进入检查，再进入正式页面 |
+
+## 🚀 真正拉开差距的组件
+
+`lark-wiki` 不是只把一堆 Markdown 喂给 LLM。真正强的是把“证据”和“关系”做成工程化组件，让个人知识库可以直接长成团队可用的工作系统。
+
+| Component | 为什么重要 |
+| --- | --- |
+| Paper Evidence Workbench | 把论文、阅读笔记、claim register、evidence review 串成可审查链路。它不只是总结 paper，而是沉淀“哪些结论来自哪些证据、哪些还没被确认”。 |
+| Knowledge Relation Map | 用 page/source edges、asset lineage、cross-namespace references 把文档、来源、页面和项目关系连起来。知识不再是散落文档，而是可追踪、可查询、可治理的工作网络。 |
+
+这两块能力让 `lark-wiki` 超出“个人 LLM wiki demo”：它能服务个人研究，也能支撑项目交付、公司 Wiki、Base-backed ops 和多人协作。
 
 ## 🧩 适合谁
 
