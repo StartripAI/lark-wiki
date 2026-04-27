@@ -1,0 +1,10 @@
+[delivery_room]
+namespace_key = "project::delivery_room"
+display_name = "Work Delivery Room"
+slug = "delivery_room"
+kind = "project"
+target_root_title = "Work Delivery Room"
+title_keywords = ["delivery", "handoff", "runbook", "risk", "status"]
+local_roots = ["docs/work", "examples/tutorials/work-delivery-room"]
+wiki_seed_nodes = []
+base_tokens = []

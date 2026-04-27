@@ -1,0 +1,10 @@
+[personal_kb]
+namespace_key = "project::personal_kb"
+display_name = "Personal Knowledge Base"
+slug = "personal_kb"
+kind = "project"
+target_root_title = "Personal Knowledge Base"
+title_keywords = ["personal", "notes", "research", "decisions"]
+local_roots = ["knowledge/wiki_src/projects/personal_kb", "docs/personal"]
+wiki_seed_nodes = []
+base_tokens = []

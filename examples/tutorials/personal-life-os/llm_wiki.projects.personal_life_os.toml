@@ -1,0 +1,10 @@
+[personal_life_os]
+namespace_key = "project::personal_life_os"
+display_name = "Personal Life OS"
+slug = "personal_life_os"
+kind = "project"
+target_root_title = "Personal Life OS"
+title_keywords = ["personal", "reading", "decision", "notes"]
+local_roots = ["docs/personal", "examples/tutorials/personal-life-os"]
+wiki_seed_nodes = []
+base_tokens = []

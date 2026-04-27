@@ -1,0 +1,10 @@
+[work_hub]
+namespace_key = "project::work_hub"
+display_name = "Work Hub"
+slug = "work_hub"
+kind = "project"
+target_root_title = "Work Hub Knowledge Base"
+title_keywords = ["work", "project", "handoff", "runbook", "decision"]
+local_roots = ["docs/work", "demo/agent_workspace_assets"]
+wiki_seed_nodes = []
+base_tokens = []

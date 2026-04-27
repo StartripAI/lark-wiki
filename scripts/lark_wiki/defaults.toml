@@ -34,6 +34,10 @@ max_assets_per_prompt = 6
 max_chars_per_asset = 3500
 semantic_lint_enabled = true
 
+[runtime]
+lark_cli_version = "1.0.19"
+optional_analysis = "user_configured"
+
 [namespaces.account]
 display_name = "Portfolio"
 slug = "account"

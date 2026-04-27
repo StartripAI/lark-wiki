@@ -74,6 +74,21 @@ class LarkWikiStarterTests(unittest.TestCase):
         self.assertEqual(count, 1)
         conn.close()
 
+    def test_repeated_runs_use_unique_ids(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db, start_run
+
+        config = build_config(self.root)
+        conn = open_db(config)
+
+        first = start_run(conn, "classify_assets", portfolio_key=config.portfolio_key, namespace_key=config.account_namespace_key)
+        second = start_run(conn, "classify_assets", portfolio_key=config.portfolio_key, namespace_key=config.account_namespace_key)
+
+        self.assertNotEqual(first, second)
+        count = conn.execute("SELECT COUNT(*) FROM runs WHERE command_name = 'classify_assets'").fetchone()[0]
+        self.assertEqual(count, 2)
+        conn.close()
+
     def test_build_config_registers_public_default_namespaces(self) -> None:
         from scripts.lark_wiki.config import build_config
 

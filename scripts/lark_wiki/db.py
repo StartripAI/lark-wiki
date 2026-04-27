@@ -5,6 +5,7 @@ import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from time import time_ns
 from typing import Any
 
 from .config import AppConfig
@@ -575,7 +576,8 @@ def start_run(
         """,
         (now_iso(), command_name, namespace_key),
     )
-    run_id = f"{namespace_key}:{command_name}:{now_iso()}"
+    started_at = now_iso()
+    run_id = f"{namespace_key}:{command_name}:{started_at}:{time_ns()}"
     conn.execute(
         """
         INSERT INTO runs (run_id, portfolio_key, namespace_key, command_name, status, started_at, finished_at, host_pid, summary_json, error_text)
@@ -587,7 +589,7 @@ def start_run(
             namespace_key,
             command_name,
             "running",
-            now_iso(),
+            started_at,
             str(os.getpid()),
             json.dumps(summary or {}, ensure_ascii=False, sort_keys=True),
         ),

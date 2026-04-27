@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640" role="img" aria-labelledby="title desc">
+  <title id="title">lark-wiki local-first architecture for Lark and Feishu</title>
+  <desc id="desc">A business-style architecture diagram showing personal, work, and company knowledge lanes flowing from local Markdown and assets into the lark-wiki compiler. The compiler produces pages, asset graphs, lint reports, paper evidence notes, and optional source-grounded synthesis, then sends approved work surfaces to Lark Docs, Wiki, Base, and Project through lark-cli while keeping local Markdown as the operating rule.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f9fb; }
+      .panel { fill: #ffffff; stroke: #d8e0e8; stroke-width: 1.4; }
+      .lane { fill: #eef4fa; stroke: #c9d6e3; stroke-width: 1.2; }
+      .lane2 { fill: #eef8f3; stroke: #c7dfd0; stroke-width: 1.2; }
+      .lane3 { fill: #f3f5f7; stroke: #d3d9df; stroke-width: 1.2; }
+      .core { fill: #12324a; stroke: #12324a; stroke-width: 1.4; }
+      .core2 { fill: #0f6b5d; stroke: #0f6b5d; stroke-width: 1.4; }
+      .node { fill: #ffffff; stroke: #b8c6d4; stroke-width: 1.3; }
+      .accent { fill: #e8f2ff; stroke: #75a7dc; stroke-width: 1.3; }
+      .green { fill: #e9f6ef; stroke: #77b88c; stroke-width: 1.3; }
+      .text { fill: #243342; font-family: Arial, Helvetica, sans-serif; font-size: 17px; }
+      .small { fill: #506172; font-family: Arial, Helvetica, sans-serif; font-size: 13px; }
+      .white { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; }
+      .label { fill: #243342; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; }
+      .title { fill: #142333; font-family: Arial, Helvetica, sans-serif; font-size: 28px; font-weight: 700; }
+      .subtitle { fill: #516273; font-family: Arial, Helvetica, sans-serif; font-size: 15px; }
+      .arrow { fill: none; stroke: #6c7d8f; stroke-width: 2.2; marker-end: url(#arrowhead); }
+      .arrow2 { fill: none; stroke: #0f6b5d; stroke-width: 2.4; marker-end: url(#arrowhead-green); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#6c7d8f"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#0f6b5d"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1120" height="640"/>
+  <text class="title" x="48" y="54">lark-wiki: local-first knowledge compiler for Lark</text>
+  <text class="subtitle" x="48" y="82">Local Markdown stays canonical. lark-cli connects Docs, Wiki, Base, and Project as work surfaces.</text>
+
+  <rect class="lane" x="48" y="118" width="208" height="86" rx="8"/>
+  <text class="label" x="72" y="150">Personal</text>
+  <text class="small" x="72" y="174">notes, decisions, research</text>
+
+  <rect class="lane2" x="48" y="228" width="208" height="86" rx="8"/>
+  <text class="label" x="72" y="260">Work</text>
+  <text class="small" x="72" y="284">projects, handoffs, runbooks</text>
+
+  <rect class="lane3" x="48" y="338" width="208" height="86" rx="8"/>
+  <text class="label" x="72" y="370">Company</text>
+  <text class="small" x="72" y="394">policies, libraries, standards</text>
+
+  <rect class="panel" x="306" y="120" width="214" height="302" rx="10"/>
+  <text class="label" x="332" y="154">Local source layer</text>
+  <rect class="node" x="332" y="178" width="160" height="54" rx="7"/>
+  <text class="text" x="354" y="209">Markdown</text>
+  <text class="small" x="354" y="225">knowledge/wiki_src</text>
+  <rect class="node" x="332" y="254" width="160" height="54" rx="7"/>
+  <text class="text" x="354" y="285">Assets</text>
+  <text class="small" x="354" y="301">files, csv, json, docs</text>
+  <rect class="node" x="332" y="330" width="160" height="54" rx="7"/>
+  <text class="text" x="354" y="361">State DB</text>
+  <text class="small" x="354" y="377">assets, pages, runs</text>
+
+  <rect class="core" x="570" y="152" width="210" height="92" rx="10"/>
+  <text class="white" x="618" y="190">lark-wiki</text>
+  <text class="small" x="611" y="214" fill="#dce8f2">ingest + graph + lint</text>
+
+  <rect class="accent" x="570" y="276" width="210" height="62" rx="8"/>
+  <text class="label" x="600" y="306">Asset graph</text>
+  <text class="small" x="600" y="324">edges, lineage, query</text>
+
+  <rect class="green" x="570" y="366" width="210" height="62" rx="8"/>
+  <text class="label" x="600" y="396">Optional analysis</text>
+  <text class="small" x="600" y="414">LLM, relations, paper evidence</text>
+
+  <rect class="core2" x="832" y="170" width="206" height="76" rx="10"/>
+  <text class="white" x="894" y="203">lark-cli</text>
+  <text class="small" x="878" y="224" fill="#dff3ed">platform boundary</text>
+
+  <rect class="panel" x="832" y="286" width="206" height="176" rx="10"/>
+  <text class="label" x="864" y="320">Lark / Feishu</text>
+  <rect class="node" x="858" y="342" width="70" height="40" rx="6"/>
+  <text class="small" x="877" y="367">Docs</text>
+  <rect class="node" x="942" y="342" width="70" height="40" rx="6"/>
+  <text class="small" x="962" y="367">Wiki</text>
+  <rect class="node" x="858" y="398" width="70" height="40" rx="6"/>
+  <text class="small" x="878" y="423">Base</text>
+  <rect class="node" x="942" y="398" width="70" height="40" rx="6"/>
+  <text class="small" x="956" y="423">Project</text>
+
+  <path class="arrow" d="M256 161 H306"/>
+  <path class="arrow" d="M256 271 H306"/>
+  <path class="arrow" d="M256 381 H306"/>
+  <path class="arrow" d="M520 206 H570"/>
+  <path class="arrow" d="M675 244 V276"/>
+  <path class="arrow" d="M675 338 V366"/>
+  <path class="arrow2" d="M780 208 H832"/>
+  <path class="arrow2" d="M935 246 V286"/>
+
+  <rect class="panel" x="122" y="500" width="876" height="74" rx="10"/>
+  <text class="label" x="154" y="532">Operating rule</text>
+  <text class="small" x="154" y="556">Local pages are canonical. Remote surfaces are mirrors, collaboration spaces, and control planes. Drift is reviewed before promotion.</text>
+</svg>
