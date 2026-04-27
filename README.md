@@ -2,7 +2,7 @@
 
 > 🧠 面向 Lark/Feishu 的 `lark-cli`-first LLM Wiki：本地 Markdown 管理知识源，飞书承载协作、检索和团队使用。
 
-`lark-wiki` 借鉴 Karpathy-style LLM wiki 的知识组织理念，但不是复制某个具体产品。它把“能问、能找、能总结”的个人知识库，变成能在 Lark/Feishu 里真正协作的工作系统：本地 Markdown 放原文和最终版本，飞书 Docs / Wiki / Base 负责协作，LLM、论文工作台和知识关系图负责把内容变得更好用。
+`lark-wiki` 借鉴 Karpathy LLM wiki 的知识组织理念。它把“能问、能找、能总结”的个人知识库，变成能在 Lark/Feishu 里真正协作的工作系统：本地 Markdown 放原文和最终版本，飞书 Docs / Wiki / Base 负责协作，LLM、论文工作台和知识关系图负责把内容变得更好用。
 
 它的目标是成为最好用的飞书个人知识库底座，同时也能自然扩展到工作项目和公司协作场景。和 Obsidian 这类个人笔记软件不同，`lark-wiki` 把协作、权限、表格、项目和消息放在飞书侧，把原始资料和整理后的页面留在本地。
 
