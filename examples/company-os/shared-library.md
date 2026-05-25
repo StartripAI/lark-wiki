@@ -5,4 +5,4 @@
 
 Use this page for reusable standards, glossaries, operating rules, and approved cross-project knowledge.
 
-Promotion rule: project-specific claims should be reviewed before they become approved shared pages.
+Promotion rule: project-specific claims should be checked before they become shared pages.

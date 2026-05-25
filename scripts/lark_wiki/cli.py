@@ -13,6 +13,18 @@ from .discover.feishu_docs import discover_feishu_docs
 from .discover.feishu_project import discover_feishu_project
 from .discover.local_repo import discover_local_repo_assets
 from .discover.state_lineage import discover_state_lineage
+from .graphify import (
+    agent_context,
+    fusion_demo,
+    graphify_candidates,
+    graphify_explain,
+    graphify_import,
+    graphify_insights,
+    graphify_path,
+    graphify_query,
+    graphify_status,
+)
+from .inventory import inventory
 from .lark_cli import run_command, run_lark
 from .lint import lint
 from .ops_base import bootstrap_ops_base, sync_ops_base
@@ -37,17 +49,29 @@ RUN_COMMANDS = {
     "snapshot_legacy",
     "ingest",
     "build_graph",
+    "graphify_import",
+    "graphify_candidates",
+    "graphify_explain",
+    "graphify_insights",
+    "graphify_path",
+    "graphify_query",
+    "graphify_status",
+    "agent_context",
+    "fusion_demo",
     "sync_push",
     "sync_pull",
     "merge_patches",
     "lint",
     "query",
+    "inventory",
     "bootstrap_ops_base",
     "sync_ops_base",
 }
 
 
 def default_namespace_for(command_name: str, config) -> str:
+    if command_name == "inventory":
+        return ""
     if command_name in {
         "upgrade_preflight",
         "bootstrap_portfolio",
@@ -60,6 +84,15 @@ def default_namespace_for(command_name: str, config) -> str:
         "classify_assets",
         "audit_coverage",
         "conformance_check",
+        "graphify_import",
+        "graphify_candidates",
+        "graphify_explain",
+        "graphify_insights",
+        "graphify_path",
+        "graphify_query",
+        "graphify_status",
+        "agent_context",
+        "fusion_demo",
         "bootstrap_ops_base",
         "sync_ops_base",
     }:
@@ -144,7 +177,35 @@ def main() -> None:
             subparser.add_argument("--limit", type=int, default=0, help="Limit number of pages processed")
         if command_name == "query":
             subparser.add_argument("--query", required=True, help="Keyword query for local asset search")
+        if command_name == "graphify_query":
+            subparser.add_argument("--query", required=True, help="Question for the official Graphify graph")
+            subparser.add_argument("--budget", type=int, default=1500, help="Token budget for Graphify output")
+            subparser.add_argument("--dfs", action="store_true", help="Use depth-first graph traversal")
+        if command_name == "graphify_path":
+            subparser.add_argument("--from", dest="source", required=True, help="Source node label")
+            subparser.add_argument("--to", dest="target", required=True, help="Target node label")
+        if command_name == "graphify_explain":
+            subparser.add_argument("--node", required=True, help="Node label to explain")
+        if command_name == "graphify_candidates":
+            subparser.add_argument("--namespace", default="", help="Target namespace key")
+            subparser.add_argument("--limit", type=int, default=25, help="Maximum candidates to show")
+            subparser.add_argument("--min-degree", type=int, default=2, help="Minimum graph degree")
+            subparser.add_argument("--source-scope", choices=["all", "wiki", "docs"], default="all")
+            subparser.add_argument("--include-code", action="store_true", help="Include code symbol candidates")
+        if command_name == "graphify_insights":
+            subparser.add_argument("--namespace", default="", help="Target namespace key")
+            subparser.add_argument("--scope", choices=["repo", "namespace"], default="repo")
+            subparser.add_argument("--limit", type=int, default=10)
+        if command_name == "agent_context":
+            subparser.add_argument("--namespace", default="", help="Target namespace key")
+            subparser.add_argument("--query", default="", help="Optional Graphify query to include")
+            subparser.add_argument("--format", choices=["json", "md"], default="json")
+        if command_name == "fusion_demo":
+            subparser.add_argument("--namespace", default="", help="Target namespace key")
+            subparser.add_argument("--query", default="system", help="Query to run through the fused demo")
         if command_name in {"bootstrap_namespace", "ingest", "build_graph", "sync_push", "sync_pull", "merge_patches", "lint", "query"}:
+            subparser.add_argument("--namespace", default="", help="Target namespace key")
+        if command_name == "inventory":
             subparser.add_argument("--namespace", default="", help="Target namespace key")
         if command_name in {"audit_coverage", "conformance_check"}:
             subparser.add_argument("--scope", choices=["account", "namespace"], default="account")
@@ -171,16 +232,54 @@ def main() -> None:
             "snapshot_legacy": lambda c, cfg, a: command_snapshot_legacy(c, cfg, namespace_key),
             "ingest": lambda c, cfg, a: ingest(c, cfg, namespace_key=namespace_key),
             "build_graph": lambda c, cfg, a: build_graph(c, cfg, namespace_key=namespace_key),
+            "graphify_import": lambda c, cfg, a: graphify_import(c, cfg),
+            "graphify_candidates": lambda c, cfg, a: graphify_candidates(
+                c,
+                cfg,
+                namespace_key=getattr(a, "namespace", "") or "",
+                limit=a.limit,
+                min_degree=a.min_degree,
+                source_scope=a.source_scope,
+                include_code=a.include_code,
+            ),
+            "graphify_explain": lambda c, cfg, a: graphify_explain(c, cfg, node=a.node),
+            "graphify_insights": lambda c, cfg, a: graphify_insights(
+                c,
+                cfg,
+                namespace_key=getattr(a, "namespace", "") or "",
+                scope=a.scope,
+                limit=a.limit,
+            ),
+            "graphify_path": lambda c, cfg, a: graphify_path(c, cfg, source=a.source, target=a.target),
+            "graphify_query": lambda c, cfg, a: graphify_query(c, cfg, query_text=a.query, budget=a.budget, dfs=a.dfs),
+            "graphify_status": lambda c, cfg, a: graphify_status(c, cfg),
+            "agent_context": lambda c, cfg, a: agent_context(
+                c,
+                cfg,
+                namespace_key=getattr(a, "namespace", "") or namespace_key,
+                query_text=a.query,
+                output_format=a.format,
+            ),
+            "fusion_demo": lambda c, cfg, a: fusion_demo(
+                c,
+                cfg,
+                namespace_key=getattr(a, "namespace", "") or namespace_key,
+                query_text=a.query,
+            ),
             "sync_push": lambda c, cfg, a: sync_push(c, cfg, namespace_key=namespace_key, limit=a.limit),
             "sync_pull": lambda c, cfg, a: sync_pull(c, cfg, namespace_key=namespace_key, limit=a.limit),
             "merge_patches": lambda c, cfg, a: merge_patches(c, cfg, namespace_key=namespace_key),
             "lint": lambda c, cfg, a: lint(c, cfg, namespace_key=namespace_key),
             "query": lambda c, cfg, a: query(c, cfg, a.query, namespace_key=namespace_key),
+            "inventory": lambda c, cfg, a: inventory(c, cfg, namespace_key=getattr(a, "namespace", "") or ""),
             "bootstrap_ops_base": lambda c, cfg, a: bootstrap_ops_base(c, cfg),
             "sync_ops_base": lambda c, cfg, a: sync_ops_base(c, cfg),
         }
         result = command_handlers[args.command](conn, config, args)
         finish_run(conn, run_id, status="success", summary=result)
+        if args.command in {"graphify_query", "graphify_path", "graphify_explain"}:
+            print(json_dumps({"command": args.command, "namespace_key": namespace_key, **result}))
+            return
         print(json_dumps({"ok": True, "command": args.command, "namespace_key": namespace_key, "result": result}))
     except Exception as exc:
         finish_run(conn, run_id, status="failed", error_text=str(exc), summary={"command": args.command, "namespace_key": namespace_key})

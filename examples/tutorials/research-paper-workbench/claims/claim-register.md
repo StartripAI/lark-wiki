@@ -3,6 +3,6 @@
 ---
 # Claim Register
 
-| Claim | Evidence | Confidence | Review note |
+| Claim | Evidence | Confidence | Note |
 | --- | --- | --- | --- |
 | Example claim | Example source note | Low | Placeholder only |

@@ -1,6 +1,6 @@
-# Research Paper Workbench Tutorial
+# Paper Evidence Workbench Tutorial
 
-Use this tutorial for paper-heavy work: reading notes, claim notes, evidence tables, and related-work maps.
+Use this tutorial for paper-heavy work: reading notes, claim notes, evidence tables, and maps between related ideas.
 
 ## Setup
 
@@ -20,7 +20,7 @@ python3 scripts/lark_wiki.py lint --namespace project::research_workbench
 
 - Keep source notes in `sources/paper-inventory.md`.
 - Track claims in `claims/claim-register.md`.
-- Use `concepts/related-work-map.md` to organize relationships.
-- Put useful paper takeaways into `reports/evidence-review.md`.
+- Use `concepts/related-work-map.md` as a Knowledge Relation Map for papers, methods, datasets, and open questions.
+- Put useful paper takeaways into `reports/evidence-notes.md`.
 
-Paper notes and relation hints are helpers. People still decide what becomes part of the final knowledge base.
+Paper notes and relation hints are helpers. People still decide what belongs in the final knowledge base.

@@ -1,0 +1,14 @@
+state/
+knowledge/build/
+knowledge/raw/
+knowledge/assets/
+graphify-out/
+knowledge/wiki_src/**/reports/query-*.md
+.git/
+__pycache__/
+.pytest_cache/
+tmp/
+*.pyc
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

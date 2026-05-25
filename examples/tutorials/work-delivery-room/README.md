@@ -1,6 +1,6 @@
 # Work Delivery Room Tutorial
 
-Use this tutorial for a project workspace that keeps delivery context, handoffs, runbooks, risks, and status notes easy to review.
+Use this tutorial for a project workspace that keeps delivery context, handoffs, runbooks, risks, and status notes easy to scan.
 
 ## Setup
 
@@ -31,4 +31,4 @@ python3 scripts/lark_wiki.py sync_push --namespace project::delivery_room --limi
 
 - Keep durable procedures in `runbooks/weekly-handoff.md`.
 - Keep active risks in `risks/risk_log.md`.
-- Use Lark Docs/Wiki as the collaboration surface after review.
+- Use Lark Docs/Wiki as the collaboration surface after the page looks right.

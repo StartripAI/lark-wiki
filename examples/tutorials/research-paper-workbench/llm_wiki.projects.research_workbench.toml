@@ -1,9 +1,9 @@
 [research_workbench]
 namespace_key = "project::research_workbench"
-display_name = "Research Paper Workbench"
+display_name = "Paper Evidence Workbench"
 slug = "research_workbench"
 kind = "project"
-target_root_title = "Research Paper Workbench"
+target_root_title = "Paper Evidence Workbench"
 title_keywords = ["research", "paper", "claim", "evidence", "related work"]
 local_roots = ["docs/research", "examples/tutorials/research-paper-workbench"]
 wiki_seed_nodes = []

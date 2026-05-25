@@ -23,26 +23,26 @@
 - **原文留在本地**。`knowledge/wiki_src/**` 放原始资料和整理后的页面；飞书是镜像，不是单一真相源。
 - **走飞书原生**。Docs、Wiki、Base 都通过 `lark-cli` 接，不绕外部封装。
 - **LLM 只看你给的资料**。摘要、找冲突、补遗漏，全部基于明确传入的来源。
-- **改动先给人看**。论文工作台、关系图、远端拉回的差异都先进 review，再写到正式页面。
+- **重要改动先过一眼**。Paper Evidence Workbench、Knowledge Relation Map、远端拉回的差异都会先进草稿或队列，人看过再写到正式页面。
 
-## 🚀 拉开差距的两块
+## 🚀 两块最值得单独拿出来说
 
-光把 Markdown 推给 LLM 不算难，真正能用起来靠两件事：把论文的结论讲清楚，把知识之间的关系连起来。
+光把 Markdown 丢给 LLM 并不稀奇。我们更关心两件事：读论文时别把“作者说了什么”和“证据能支持什么”混在一起；做知识库时别让页面变成一堆孤岛。
 
 | 组件 | 解决什么 |
 | --- | --- |
-| 论文证据工作台 | 不只总结一篇论文，而是把它说了什么、支持哪个结论、哪里还不确定都记下来 |
-| 知识关系图 | 把文档、来源、页面、项目串成一张能搜、能跳、能复用的网，不再是散落文件 |
+| Paper Evidence Workbench | 把论文、结论、证据、没想明白的问题放在同一张工作台里，不替你下判断，帮你少忘关键信息 |
+| Knowledge Relation Map | 先把有哪些页面、它们为什么有关、哪里坏了或太薄、下一步该读什么说清楚，让知识可以沿着上下文继续走 |
 
-这两块上去之后，`lark-wiki` 不只是个人 LLM wiki demo —— 可以落到项目交付、公司 Wiki、Base 运营台账和多人协作里。
+这两块做好后，`lark-wiki` 就不只是“给笔记加个总结”的小工具。它可以落到项目交付、公司 Wiki、Base 运营台账和多人协作里。
 
 ## 🧩 谁会用得上
 
 - **个人知识库**：笔记、阅读、论文、决策、灵感、生活/工作运营文档
 - **项目 Wiki**：runbook、handoff、会议纪要、状态同步、风险记录
 - **公司协作**：共享制度、流程库、项目组合视图、Base 支撑的运营台账
-- **论文研究**：把论文的结论、证据、不确定性记清楚，关联到自己的工作页
-- **知识网络**：把页面、来源、项目串成一张能搜、能跳的图，文件不再散
+- **论文研究**：用 Paper Evidence Workbench 记清论文结论、证据和还没解决的问题
+- **知识网络**：用 Knowledge Relation Map 看清页面清单、关联理由、问题和下一步阅读顺序，文件不再散
 
 默认四个命名空间：
 
@@ -65,6 +65,7 @@ python3 scripts/lark_wiki.py bootstrap_portfolio
 python3 scripts/lark_wiki.py discover_local_repo_assets
 python3 scripts/lark_wiki.py classify_assets
 python3 scripts/lark_wiki.py ingest --namespace project::agent_workspace
+python3 scripts/lark_wiki.py inventory --namespace project::agent_workspace
 python3 scripts/lark_wiki.py build_graph --namespace project::agent_workspace
 python3 scripts/lark_wiki.py lint --namespace project::agent_workspace
 python3 scripts/lark_wiki.py query --namespace project::agent_workspace --query handoff
@@ -104,9 +105,11 @@ python3 scripts/lark_wiki.py discover_feishu_docs
 python3 scripts/lark_wiki.py discover_feishu_bases
 python3 scripts/lark_wiki.py classify_assets
 python3 scripts/lark_wiki.py ingest --namespace account
+python3 scripts/lark_wiki.py inventory --namespace account
 python3 scripts/lark_wiki.py build_graph --namespace account
 python3 scripts/lark_wiki.py sync_push --namespace account --limit 1
 python3 scripts/lark_wiki.py ingest --namespace project::agent_workspace
+python3 scripts/lark_wiki.py inventory --namespace project::agent_workspace
 python3 scripts/lark_wiki.py build_graph --namespace project::agent_workspace
 python3 scripts/lark_wiki.py sync_push --namespace project::agent_workspace --limit 1
 ```
@@ -115,7 +118,7 @@ python3 scripts/lark_wiki.py sync_push --namespace project::agent_workspace --li
 
 | 等级 | 命令 |
 | --- | --- |
-| 只写本地，不调远端 | `bootstrap_portfolio`、`bootstrap_namespace`、`discover_local_repo_assets`、`classify_assets`、`ingest`、`build_graph`、`query --query <text>` |
+| 只写本地，不调远端 | `bootstrap_portfolio`、`bootstrap_namespace`、`discover_local_repo_assets`、`classify_assets`、`ingest`、`inventory`、`build_graph`、`agent_context`、`query --query <text>` |
 | 主要本地，可能拉绑定的镜像 | `lint` |
 | 远端只读 + 本地落盘 | `upgrade_preflight`、`discover_feishu_docs`、`discover_feishu_bases`、`discover_feishu_project`、`sync_pull` |
 | 远端写 | `sync_push`、`bootstrap_ops_base`、`sync_ops_base` |
@@ -125,7 +128,7 @@ python3 scripts/lark_wiki.py sync_push --namespace project::agent_workspace --li
 - [Personal Life OS](examples/tutorials/personal-life-os/README.md)：个人笔记、阅读、决策，把整理过的内容分享给团队
 - [Work Delivery Room](examples/tutorials/work-delivery-room/README.md)：项目交付、handoff、runbook、风险与状态同步
 - [Company Collaboration OS](examples/tutorials/company-collaboration-os/README.md)：公司协作 Wiki、共享标准、Base 运营台账
-- [Research Paper Workbench](examples/tutorials/research-paper-workbench/README.md)：论文阅读、结论与证据整理、相关工作图谱
+- [Paper Evidence Workbench](examples/tutorials/research-paper-workbench/README.md)：论文阅读、结论与证据整理、Knowledge Relation Map
 
 更轻量的 starter：
 
@@ -133,7 +136,7 @@ python3 scripts/lark_wiki.py sync_push --namespace project::agent_workspace --li
 - [Work Project](examples/work-project/README.md)：最小项目知识库
 - [Company OS](examples/company-os/README.md)：account/shared 起步配置
 - [lark-cli recipes](examples/lark-cli-recipes.md)：底层平台命令速查
-- [Optional analysis](examples/optional-analysis.md)：LLM、论文证据、关系图能力说明
+- [Optional analysis](examples/optional-analysis.md)：LLM、Paper Evidence Workbench、Knowledge Relation Map 能力说明
 
 ## 🧱 技术架构
 
@@ -213,9 +216,17 @@ provider 模式：
 | 能力 | 作用 |
 | --- | --- |
 | `@larksuite/cli@1.0.19` | 必装的平台连接器 |
-| 关系图 | 把页面、来源、项目、可复用想法连起来 |
-| 论文证据工作台 | 论文笔记、结论笔记、证据表 |
+| Knowledge Relation Map | 基于 `inventory` 看页面有哪些、关系为什么成立、哪些地方断了或太薄，并给出可执行的阅读和补充建议 |
+| External relation map import | 读取外部关系图产物，镜像到本地 build 目录，再让 `query` 用这些关系扩展阅读顺序 |
+| Paper Evidence Workbench | 论文笔记、结论笔记、证据表 |
 | LLM provider | 总结你给的来源，标记可能的冲突 |
+
+完整关系图刷新由外部分析工作流完成；lark-wiki 负责导入、盘点和查询消费：
+
+```bash
+python3 scripts/lark_wiki.py agent_context --namespace project::agent_workspace
+python3 scripts/lark_wiki.py query --namespace project::agent_workspace --query handoff
+```
 
 ## 🧪 验证
 
@@ -237,31 +248,25 @@ python3 scripts/lark_wiki.py upgrade_preflight
 rg -n "replace-with-your-private-pattern" README.md examples assets scripts tests knowledge
 ```
 
-## 📚 命令清单
+## 📚 常用命令
+
+完整命令以 `python3 scripts/lark_wiki.py --help` 为准。日常最常用的是这些：
 
 ```text
-audit_coverage
-bootstrap_namespace
-bootstrap_ops_base
 bootstrap_portfolio
-build_graph
+discover_local_repo_assets
 classify_assets
-conformance_check
-discover_account_assets
+ingest
+inventory
+build_graph
+agent_context
+lint
+query --query <text> [--namespace project::<slug>]
+upgrade_preflight
 discover_feishu_bases
 discover_feishu_docs
-discover_feishu_project
-discover_local_repo_assets
-discover_state_lineage
-ingest
-lint
-merge_patches
-query --query <text> [--namespace project::<slug>]
-snapshot_legacy
-sync_ops_base
 sync_pull
 sync_push
-upgrade_preflight
 ```
 
 ## 🧭 接下来
@@ -269,4 +274,4 @@ upgrade_preflight
 - 装好就能用的 `lark-wiki` 控制台命令
 - 带截图的首次同步指引
 - 更多个人 / 工作 / 团队场景的实用模板
-- 把论文证据和关系图工作流的接入步骤写得更清楚
+- 把 Paper Evidence Workbench 和 Knowledge Relation Map 的接入步骤写得更清楚

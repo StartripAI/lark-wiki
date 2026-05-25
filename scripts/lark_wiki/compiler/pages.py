@@ -426,7 +426,7 @@ def _ingest_agent_workspace(conn: sqlite3.Connection, config: AppConfig, namespa
         """
         # Agent Ops Catalog
 
-        ## Synthetic core entities
+        ## Core entities
 
         - `AGENT-001`: research coordinator
         - `TASK-101`: weekly synthesis

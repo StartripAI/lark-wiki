@@ -8,4 +8,4 @@
 - Current priorities
 - Open risks
 - Decisions needed
-- Links to reviewed pages
+- Links to pages the team can use

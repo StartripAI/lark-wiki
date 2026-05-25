@@ -183,11 +183,15 @@ def _run_command_provider(config: AppConfig, payload: dict[str, Any]) -> str:
 
 def _mock_markdown(payload: dict[str, Any]) -> str:
     contexts = payload.get("contexts", []) or []
+    page_contexts = payload.get("page_contexts", []) or []
     asset_keys = [item.get("asset_key", "") for item in contexts][:3]
     theme_lines = []
     for item in contexts[:3]:
         snippet = _truncate(str(item.get("snippet", "")).replace("\n", " "), 120)
         theme_lines.append(f"- `{item.get('asset_key', '')}`：{snippet}")
+    for item in page_contexts[:3]:
+        snippet = _truncate(str(item.get("snippet", "")).replace("\n", " "), 120)
+        theme_lines.append(f"- `{item.get('page_id', '')}`：{snippet}")
     lines = [
         f"### Grounded Summary",
         f"- Page intent: {payload.get('title', 'Untitled')}",
@@ -280,9 +284,15 @@ def compile_query_markdown(
     namespace_key: str,
     keyword: str,
     asset_keys: list[str],
+    graph_context: dict[str, Any] | None = None,
 ) -> str:
     contexts = collect_asset_context(conn, config, asset_keys)
-    if not contexts:
+    page_contexts = []
+    if graph_context:
+        raw_page_contexts = graph_context.get("related_page_contexts", [])
+        if isinstance(raw_page_contexts, list):
+            page_contexts = [item for item in raw_page_contexts if isinstance(item, dict)]
+    if not contexts and not page_contexts:
         return ""
     payload = {
         "task": "query_synthesis",
@@ -290,6 +300,8 @@ def compile_query_markdown(
         "keyword": keyword,
         "title": f"Query Report: {keyword}",
         "contexts": [context.__dict__ for context in contexts],
+        "page_contexts": page_contexts,
+        "graph_context": graph_context or {},
     }
     return _invoke_text(config, payload)
 

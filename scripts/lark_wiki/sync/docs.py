@@ -211,6 +211,8 @@ def sync_push(conn: sqlite3.Connection, config: AppConfig, namespace_key: str, l
         SELECT *
         FROM pages
         WHERE namespace_key = ?
+          AND sync_mode != 'local_only'
+          AND page_id NOT LIKE '%::query-%'
         ORDER BY
             CASE
                 WHEN page_id = ? THEN 0

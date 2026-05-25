@@ -2,7 +2,7 @@
 
 ## This Week
 
-- `AGENT-001` reviewed the workspace backlog.
+- `AGENT-001` checked the workspace backlog.
 - `TASK-101` prepared a Friday synthesis pass.
 - `DOC::runbook` remained the reference for execution order.
 

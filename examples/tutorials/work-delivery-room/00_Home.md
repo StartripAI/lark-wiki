@@ -3,11 +3,11 @@
 ---
 # Work Delivery Room
 
-Use this page as the project landing surface for scope, delivery status, handoffs, and review-ready documentation.
+Use this page as the project landing surface for scope, delivery status, handoffs, and docs that are ready for teammates to use.
 
 ## Weekly rhythm
 
 - Collect source updates.
 - Refresh project pages.
-- Review risks and handoffs.
+- Check risks and handoffs.
 - Push approved pages to Lark/Feishu.

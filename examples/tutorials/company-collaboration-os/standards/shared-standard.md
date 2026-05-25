@@ -7,7 +7,7 @@
 
 Write one clear rule here.
 
-## Review
+## Upkeep
 
 - Owner: Placeholder team
-- Review cadence: Monthly
+- Check-in cadence: Monthly

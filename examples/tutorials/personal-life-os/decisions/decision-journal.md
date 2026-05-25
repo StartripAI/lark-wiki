@@ -3,6 +3,6 @@
 ---
 # Decision Journal
 
-| Date | Decision | Context | Review date |
+| Date | Decision | Context | Revisit date |
 | --- | --- | --- | --- |
 | 2026-01-01 | Example decision | Placeholder context | 2026-02-01 |

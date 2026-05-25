@@ -3,6 +3,6 @@
 ---
 # Ops Records
 
-| Record | Source | Review status |
+| Record | Source | Status |
 | --- | --- | --- |
-| Example operating record | Placeholder Base | Pending review |
+| Example operating record | Placeholder Base | Needs a look |

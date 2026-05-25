@@ -5,4 +5,4 @@
 
 | Paper | Question | Status |
 | --- | --- | --- |
-| Example Paper | Placeholder research question | To review |
+| Example Paper | Placeholder research question | To read |
