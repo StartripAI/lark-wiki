@@ -4,6 +4,14 @@
   "links_to": [
     "project::agent_workspace::agent-ops-catalog",
     "project::agent_workspace::agent-system-map",
+    "project::agent_workspace::ai-native-trade-control-plane-v0-2026-05-28",
+    "project::agent_workspace::aios-os-ai-judgment-matrix",
+    "project::agent_workspace::aios-os-data-objects",
+    "project::agent_workspace::aios-os-overview",
+    "project::agent_workspace::aios-os-privacy-pii-governance",
+    "project::agent_workspace::aios-os-risk-taxonomy",
+    "project::agent_workspace::aios-os-ue-cost-model",
+    "project::agent_workspace::aios4game-evidence-gap-resolver-v0-2-sync",
     "project::agent_workspace::asset-inventory",
     "project::agent_workspace::execution-readiness-report",
     "project::agent_workspace::handoff-risks-report",
@@ -27,18 +35,26 @@
 
 ## Canonical 页面
 
-- `Concept` [Agent System Map](knowledge/wiki_src/projects/agent_workspace/concepts/agent_system_map.md) | inbound=4 | sources=0
-- `Entity` [Agent Ops Catalog](knowledge/wiki_src/projects/agent_workspace/entities/agent_ops_catalog.md) | inbound=2 | sources=5
-- `Home` [Agent Workspace Starter](knowledge/wiki_src/projects/agent_workspace/00_Home.md) | inbound=7 | sources=5
-- `Log` [Agent Workspace 运行日志](knowledge/wiki_src/projects/agent_workspace/02_Log.md) | inbound=7 | sources=0
-- `Report` [Execution Readiness Report](knowledge/wiki_src/projects/agent_workspace/reports/execution_readiness_report.md) | inbound=6 | sources=5
-- `Report` [Handoff Risks Report](knowledge/wiki_src/projects/agent_workspace/reports/handoff_risks_report.md) | inbound=6 | sources=5
-- `Source` [Agent Workspace Asset Inventory](knowledge/wiki_src/projects/agent_workspace/sources/asset_inventory.md) | inbound=8 | sources=5
-- `Source` [Ops Base Registry](knowledge/wiki_src/projects/agent_workspace/sources/ops_base_registry.md) | inbound=8 | sources=0
-- `Source` [Remote Docs Registry](knowledge/wiki_src/projects/agent_workspace/sources/remote_docs_registry.md) | inbound=9 | sources=0
-- `Source` [State Lineage Registry](knowledge/wiki_src/projects/agent_workspace/sources/state_lineage_registry.md) | inbound=10 | sources=0
+- `Concept`AIOS OS AI Judgment Matrix & Action Boundaries | inbound=8 | sources=0
+- `Concept`AIOS OS Canonical Knowledge (Overview) | inbound=9 | sources=0
+- `Concept`AIOS OS Privacy & PII Governance | inbound=7 | sources=0
+- `Concept`AIOS OS Risk Taxonomy | inbound=8 | sources=0
+- `Concept`AIOS OS UE & Cost Model | inbound=9 | sources=0
+- `Concept`Agent System Map | inbound=4 | sources=0
+- `Entity`AIOS OS Data Objects (7 minimal) | inbound=8 | sources=0
+- `Entity`Agent Ops Catalog | inbound=2 | sources=12
+- `Home`Agent Workspace Starter | inbound=15 | sources=12
+- `Log`Agent Workspace 运行日志 | inbound=15 | sources=0
+- `Report`AI-native 游戏账号交易控制面：第一性原理、上线门槛与 8 周执行方案 | inbound=3 | sources=0
+- `Report`AIOS4game Evidence Autopilot v0.3 Sync Brief | inbound=10 | sources=0
+- `Report`Execution Readiness Report | inbound=14 | sources=12
+- `Report`Handoff Risks Report | inbound=14 | sources=12
+- `Source`Agent Workspace Asset Inventory | inbound=15 | sources=12
+- `Source`Ops Base Registry | inbound=16 | sources=0
+- `Source`Remote Docs Registry | inbound=17 | sources=0
+- `Source`State Lineage Registry | inbound=18 | sources=0
 
 ## Generated query reports
 
-- `Report` Query Report: handoff | knowledge/wiki_src/projects/agent_workspace/reports/query-handoff.md
-- `Report` Query Report: system | knowledge/wiki_src/projects/agent_workspace/reports/query-system.md
+- `Report` Query Report: AIOS4game P0 MySQL AI Gateway evidence autopilot Deal File | knowledge/wiki_src/projects/agent_workspace/reports/query-aios4game-p0-mysql-ai-gateway-evidence-autopilot-deal-file.md
+- `Report` Query Report: lark-cli RAG vector local knowledge source of truth | knowledge/wiki_src/projects/agent_workspace/reports/query-lark-cli-rag-vector-local-knowledge-source-of-truth.md

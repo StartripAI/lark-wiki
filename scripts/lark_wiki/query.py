@@ -7,6 +7,7 @@ from pathlib import Path
 from .config import AppConfig
 from .db import upsert_asset, upsert_page
 from .graphify import load_graphify_enrichment
+from .inventory import build_relation_inventory
 from .llm_compile import compile_query_markdown
 from .markdown import read_frontmatter, write_canonical_page
 from .portfolio import namespace_root_dir, namespaced_page_id, page_asset_key
@@ -203,6 +204,101 @@ def _graphify_related(
     return sorted(best.values(), key=lambda item: (-float(item["score"]), str(item["asset_key"]), str(item["page_id"])))[:10]
 
 
+def _inventory_related(
+    conn: sqlite3.Connection,
+    config: AppConfig,
+    namespace_key: str,
+    direct_asset_keys: list[str],
+    direct_page_ids: list[str],
+    excluded_page_ids: set[str] | None = None,
+) -> list[dict[str, object]]:
+    """Derive related pages purely from internal inventory relations.
+
+    Reuses the inventory relation scoring (``links_to`` neighbors + pages that
+    share ``source_ids``) so related pages and synthesis context stay populated
+    even when zero external graphify artifacts exist.
+    """
+    excluded_page_ids = excluded_page_ids or set()
+    page_to_asset, asset_to_page = _page_asset_maps(conn, namespace_key)
+    seed_pages = {asset_to_page[key] for key in direct_asset_keys if key in asset_to_page}
+    seed_pages.update(page_id for page_id in direct_page_ids if page_id)
+    seed_pages.difference_update(excluded_page_ids)
+    if not seed_pages:
+        return []
+    page_by_id = {str(row["page_id"]): row for row in _page_rows(conn, config, namespace_key)}
+    inventory = build_relation_inventory(conn, config, namespace_key)
+    edges = inventory.get("edges", []) if isinstance(inventory, dict) else []
+    best: dict[str, dict[str, object]] = {}
+    for raw_edge in edges:
+        if not isinstance(raw_edge, dict):
+            continue
+        from_page = str(raw_edge.get("from", ""))
+        to_page = str(raw_edge.get("to", ""))
+        if from_page in seed_pages and to_page not in seed_pages:
+            neighbor = to_page
+        elif to_page in seed_pages and from_page not in seed_pages:
+            neighbor = from_page
+        else:
+            continue
+        if _is_generated_query_page(neighbor):
+            continue
+        if neighbor in excluded_page_ids:
+            continue
+        asset_key = page_to_asset.get(neighbor, "")
+        if asset_key and asset_key in direct_asset_keys:
+            continue
+        if not asset_key and neighbor in direct_page_ids:
+            continue
+        try:
+            score = float(raw_edge.get("score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        result_key = asset_key or f"PAGE::{neighbor}"
+        current = best.get(result_key)
+        if current and float(current["score"]) >= score:
+            continue
+        reasons = [str(reason) for reason in raw_edge.get("reasons", []) if str(reason)]
+        page = page_by_id.get(neighbor, {})
+        best[result_key] = {
+            "asset_key": asset_key,
+            "page_id": neighbor,
+            "title": str(page.get("title") or neighbor),
+            "local_path": str(page.get("local_path") or ""),
+            "score": score,
+            "reasons": reasons,
+            "source_layer": str(raw_edge.get("source_layer") or "canonical"),
+            "relation": reasons[0] if reasons else "",
+            "confidence": "",
+            "source_file": "",
+        }
+    return sorted(best.values(), key=lambda item: (-float(item["score"]), str(item["asset_key"]), str(item["page_id"])))[:10]
+
+
+def _merge_related(
+    graphify_related: list[dict[str, object]],
+    inventory_related: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Combine graphify and inventory related pages deterministically.
+
+    Graphify (external) signals win on ties so existing behavior is preserved;
+    inventory-derived relations complement / backfill them so the section is
+    never empty when only internal relations exist.
+    """
+    merged: dict[str, dict[str, object]] = {}
+    for item in graphify_related:
+        key = str(item.get("asset_key") or "") or f"PAGE::{item.get('page_id', '')}"
+        merged[key] = item
+    for item in inventory_related:
+        key = str(item.get("asset_key") or "") or f"PAGE::{item.get('page_id', '')}"
+        if key in merged:
+            continue
+        merged[key] = item
+    return sorted(
+        merged.values(),
+        key=lambda item: (-float(item.get("score", 0.0)), str(item.get("asset_key") or ""), str(item.get("page_id") or "")),
+    )[:10]
+
+
 def _rows_by_asset(rows: list[dict[str, object]]) -> dict[str, dict[str, object]]:
     return {str(row["asset_key"]): row for row in rows}
 
@@ -221,8 +317,8 @@ def _related_page_contexts(config: AppConfig, related: list[dict[str, object]]) 
             snippet = body.strip()
         except (json.JSONDecodeError, ValueError, OSError):
             snippet = read_text_safe(full_path).strip()
-        if len(snippet) > config.llm_max_chars_per_asset:
-            snippet = snippet[: config.llm_max_chars_per_asset - 1].rstrip() + "…"
+        if len(snippet) > config.agent_max_chars_per_asset:
+            snippet = snippet[: config.agent_max_chars_per_asset - 1].rstrip() + "…"
         contexts.append(
             {
                 "page_id": str(item.get("page_id") or ""),
@@ -234,7 +330,7 @@ def _related_page_contexts(config: AppConfig, related: list[dict[str, object]]) 
                 "snippet": snippet,
             }
         )
-        if len(contexts) >= config.llm_max_assets_per_prompt:
+        if len(contexts) >= config.agent_max_assets_per_prompt:
             break
     return contexts
 
@@ -252,8 +348,8 @@ def _page_contexts_from_rows(config: AppConfig, rows: list[dict[str, object]]) -
                     snippet = body.strip()
                 except (json.JSONDecodeError, ValueError, OSError):
                     snippet = read_text_safe(full_path).strip()
-        if len(snippet) > config.llm_max_chars_per_asset:
-            snippet = snippet[: config.llm_max_chars_per_asset - 1].rstrip() + "…"
+        if len(snippet) > config.agent_max_chars_per_asset:
+            snippet = snippet[: config.agent_max_chars_per_asset - 1].rstrip() + "…"
         contexts.append(
             {
                 "page_id": str(row.get("page_id") or ""),
@@ -265,7 +361,7 @@ def _page_contexts_from_rows(config: AppConfig, rows: list[dict[str, object]]) -
                 "snippet": snippet,
             }
         )
-        if len(contexts) >= config.llm_max_assets_per_prompt:
+        if len(contexts) >= config.agent_max_assets_per_prompt:
             break
     return contexts
 
@@ -292,7 +388,7 @@ def query(conn: sqlite3.Connection, config: AppConfig, keyword: str, namespace_k
     ]
     direct_asset_keys = [str(row["asset_key"]) for row in matches]
     direct_page_ids = [str(row["page_id"]) for row in page_matches]
-    related = _graphify_related(
+    graphify_related = _graphify_related(
         conn,
         config,
         namespace_key,
@@ -300,6 +396,15 @@ def query(conn: sqlite3.Connection, config: AppConfig, keyword: str, namespace_k
         direct_page_ids,
         excluded_page_ids={report_id},
     )
+    inventory_related = _inventory_related(
+        conn,
+        config,
+        namespace_key,
+        direct_asset_keys,
+        direct_page_ids,
+        excluded_page_ids={report_id},
+    )
+    related = _merge_related(graphify_related, inventory_related)
     rows_by_asset = _rows_by_asset(all_rows)
     rel_path = Path(relative_to_root(namespace_root_dir(config, namespace_key) / "reports" / f"{short_id}.md", config.wiki_src_dir))
     lines = [

@@ -74,8 +74,20 @@ def read_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
     if not text.startswith("---\n"):
         return {}, text
     _, rest = text.split("---\n", 1)
+    # Tolerate malformed front-matter: an opening "---\n" with no closing
+    # "\n---\n" fence, or a fenced block whose body is not valid JSON. In
+    # either case fall back to treating the whole file as plain body so a
+    # single bad page cannot take down build_graph/ingest.
+    if "\n---\n" not in rest:
+        return {}, text
     frontmatter_raw, body = rest.split("\n---\n", 1)
-    return json.loads(frontmatter_raw), body
+    try:
+        parsed = json.loads(frontmatter_raw)
+    except (json.JSONDecodeError, ValueError):
+        return {}, text
+    if not isinstance(parsed, dict):
+        return {}, text
+    return parsed, body
 
 
 def markdown_is_safe(markdown: str) -> bool:
@@ -85,6 +97,15 @@ def markdown_is_safe(markdown: str) -> bool:
 def normalize_markdown_for_sync(markdown: str) -> str:
     text = markdown.replace("\r\n", "\n").strip()
     text = MARKDOWN_LINK_RE.sub(r"\1", text)
+    text = re.sub(r"\\([~])", r"\1", text)
+    text = re.sub(r"^([*-]\s+`[^`]+`)\s+(?=\S)", r"\1", text, flags=re.MULTILINE)
+    text = re.sub(r"^```([A-Za-z]+)\s+Text\s*$", r"```\1", text, flags=re.MULTILINE)
+    text = re.sub(
+        r"^\|(?:\s*:?-+:?\s*\|)+$",
+        lambda match: "|" + "|".join("-" for _ in match.group(0).strip().strip("|").split("|")) + "|",
+        text,
+        flags=re.MULTILINE,
+    )
     text = re.sub(r"[ \t]+$", "", text, flags=re.MULTILINE)
     # Feishu stores the document title separately, so fetched markdown often
     # omits the leading H1 that exists in our canonical page body.

@@ -25,7 +25,7 @@ TYPE_PAIR_SCORE = 0.25
 EMPTY_BODY_LIMIT = 40
 
 STRUCTURAL_PAGE_TYPES = {"Home", "Index", "Log"}
-DEMO_MARKERS = ("demo", "starter", "placeholder", "synthetic", "example.invalid")
+DEMO_MARKERS = ("starter", "placeholder", "synthetic", "example.invalid")
 SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2, "info": 3}
 REASON_ORDER = {
     "direct_link": 0,

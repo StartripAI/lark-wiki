@@ -114,44 +114,41 @@ def wiki_list_spaces(config: AppConfig) -> list[dict[str, Any]]:
     return payload.get("data", {}).get("items", []) or payload.get("data", {}).get("spaces", []) or []
 
 
+def _strip_v2_title(content: str) -> tuple[str, str]:
+    match = re.match(r"\s*<title>(.*?)</title>\s*", content, flags=re.DOTALL)
+    if not match:
+        return "", content
+    title = re.sub(r"\s+", " ", match.group(1)).strip()
+    return title, content[match.end() :].lstrip()
+
+
 def docs_fetch_full(config: AppConfig, doc_ref: str, chunk_size: int = 2000) -> dict[str, str]:
-    offset = 0
-    seen_offsets: set[int] = set()
-    chunks: list[str] = []
-    title = ""
-    doc_id = ""
-    while True:
-        if offset in seen_offsets:
-            raise RuntimeError(f"docs +fetch pagination loop detected for {doc_ref} at offset {offset}")
-        seen_offsets.add(offset)
-        payload = run_lark(
-            config,
-            [
-                "docs",
-                "+fetch",
-                "--as",
-                "user",
-                "--doc",
-                doc_ref,
-                "--offset",
-                str(offset),
-                "--limit",
-                str(chunk_size),
-            ],
-        )
-        data = payload.get("data", {}) or {}
-        title = data.get("title", title)
-        doc_id = data.get("doc_id", doc_id)
-        chunks.append(data.get("markdown", ""))
-        if not data.get("has_more"):
-            break
-        next_offset = data.get("next_offset")
-        if next_offset is None:
-            raise RuntimeError(f"docs +fetch ended without next_offset while has_more=true for {doc_ref}")
-        offset = int(next_offset)
-        if len(seen_offsets) > 2000:
-            raise RuntimeError(f"docs +fetch exceeded pagination safety limit for {doc_ref}")
-    return {"doc_id": doc_id, "title": title, "markdown": "".join(chunks)}
+    payload = run_lark(
+        config,
+        [
+            "docs",
+            "+fetch",
+            "--api-version",
+            "v2",
+            "--as",
+            "user",
+            "--doc",
+            doc_ref,
+            "--doc-format",
+            "markdown",
+            "--format",
+            "json",
+        ],
+    )
+    data = payload.get("data", {}) or {}
+    document = data.get("document", {}) or {}
+    content = str(document.get("content") or "")
+    title, markdown = _strip_v2_title(content)
+    return {
+        "doc_id": str(document.get("document_id") or data.get("doc_id") or ""),
+        "title": str(document.get("title") or data.get("title") or title),
+        "markdown": markdown,
+    }
 
 
 def base_list_tables(config: AppConfig, base_token: str) -> list[dict[str, Any]]:

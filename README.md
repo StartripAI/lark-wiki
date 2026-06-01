@@ -99,6 +99,14 @@ npx skills add https://github.com/larksuite/cli -y -g
 
 先同步 account/root，再同步 project，否则 project push 会缺父级 Wiki root。
 
+中文正式稿推飞书前，先跑一遍本地人话化检查。这个步骤参考
+[`ai-zixun/humanizer-zh`](https://github.com/ai-zixun/humanizer-zh)，只用于提升中文可读性，不用于绕过 AI 检测。
+
+```bash
+python3 scripts/humanize_zh.py --apply knowledge/wiki_src/projects/agent_workspace/reports/<page>.md
+python3 scripts/humanize_zh.py --fail-on-issues knowledge/wiki_src/projects/agent_workspace/reports/<page>.md
+```
+
 ```bash
 python3 scripts/lark_wiki.py upgrade_preflight
 python3 scripts/lark_wiki.py discover_feishu_docs
@@ -184,30 +192,19 @@ state/llm_wiki_v1.local.toml
 state/llm_wiki.projects/*.toml
 ```
 
-`state/llm_wiki_v1.local.toml` 放本机的 LLM 和 workspace 设置；`state/llm_wiki.projects/*.toml` 放每个项目的 starter profile，从 `examples/` 复制过来。
+`state/llm_wiki_v1.local.toml` 放本机取材上限和 workspace 设置；`state/llm_wiki.projects/*.toml` 放每个项目的 starter profile，从 `examples/` 复制过来。
 
-最小 LLM 配置：
+关于综合（核心边界）：
+
+> **本工具不调用任何 LLM provider/API/模型子进程。** 没有 API key、没有 `codex exec` 子进程、没有 command provider。综合（synthesis）由**当前操作仓库的大模型 IDE 自身**（Claude Code / Codex）按 `AGENTS.md` 完成——IDE agent 就是那个「LLM」。工具只做确定性的编译/盘点/lint/同步，并在需要综合的地方留下 `AGENT SYNTHESIS TASK` 占位，交给 agent 填。
+
+`[agent_synthesis]` 配置块只用来调**确定性**的取材上限，不指向任何模型：
 
 ```toml
-[llm]
-provider = "disabled"
-model = "gpt-5.4-mini"
-command = ""
-timeout_seconds = 180
-max_assets_per_prompt = 6
-max_chars_per_asset = 3500
-semantic_lint_enabled = true
+[agent_synthesis]
+max_assets_per_prompt = 6     # 一次取材的最多来源数
+max_chars_per_asset = 3500    # 每个来源的截断长度
 ```
-
-provider 模式：
-
-| 模式 | 用法 |
-| --- | --- |
-| `disabled` | 只跑确定性的编译和同步 |
-| `mock` | 本地测试和 CI |
-| `command` | 调用自己的 JSON 命令 provider |
-| `codex_exec` | 用 `codex exec` 总结传入的来源 |
-| `auto` | 优先 `codex`，回退 command，再回退 disabled |
 
 ## 🔌 可选的分析能力
 
@@ -219,7 +216,13 @@ provider 模式：
 | Knowledge Relation Map | 基于 `inventory` 看页面有哪些、关系为什么成立、哪些地方断了或太薄，并给出可执行的阅读和补充建议 |
 | External relation map import | 读取外部关系图产物，镜像到本地 build 目录，再让 `query` 用这些关系扩展阅读顺序 |
 | Paper Evidence Workbench | 论文笔记、结论笔记、证据表 |
-| LLM provider | 总结你给的来源，标记可能的冲突 |
+| IDE agent 综合 | 由 Claude Code / Codex 按 `AGENTS.md` 阅读来源并写综合；工具只留 `AGENT SYNTHESIS TASK` 占位，不调任何模型 |
+
+> 实现成熟度（与代码一致，避免过度宣称）：
+> - **矛盾检测已内置且默认开启**：`lint` 会对页面里 `Claim: <键> => <值>` 的跨页冲突做确定性检查，无需任何 LLM provider。
+> - **综合由 IDE agent 完成、绝不调 provider**：`ingest` 为每个来源生成带 `AGENT SYNTHESIS TASK` 占位的 summary 页并提取其 `Claim:`；Claude Code / Codex 操作仓库时按 `AGENTS.md` 把占位填成 grounded 综合。
+> - **Knowledge Relation Map 目前是「消费外部图」**：关系图由外部 graphify 工作流生成，lark-wiki 负责导入/盘点/查询，暂不在内部计算关系。
+> - **Paper Evidence Workbench 目前是 sidecar/模板**：检测 claim/evidence/open-question 标记并产出旁挂摘要，不自动生成或并入正式页面。
 
 完整关系图刷新由外部分析工作流完成；lark-wiki 负责导入、盘点和查询消费：
 

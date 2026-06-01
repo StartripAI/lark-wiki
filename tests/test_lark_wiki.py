@@ -5,6 +5,7 @@ import json
 import shutil
 import sqlite3
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -305,6 +306,146 @@ class LarkWikiStarterTests(unittest.TestCase):
         self.assertIn("demo/agent_workspace_assets", project.local_roots)
         self.assertEqual(config.target_root_title, "Agent Workspace Starter")
 
+    def test_config_exposes_agent_synthesis_limits_without_provider_surface(self) -> None:
+        from scripts.lark_wiki.config import build_config
+
+        config = build_config(self.root)
+
+        self.assertEqual(config.agent_max_assets_per_prompt, 6)
+        self.assertEqual(config.agent_max_chars_per_asset, 3500)
+        for removed in (
+            "llm_provider",
+            "llm_model",
+            "llm_command",
+            "llm_timeout_seconds",
+            "llm_max_assets_per_prompt",
+            "llm_max_chars_per_asset",
+            "llm_semantic_lint_enabled",
+        ):
+            self.assertFalse(hasattr(config, removed), removed)
+
+    def test_legacy_llm_config_is_ignored_but_agent_synthesis_config_applies(self) -> None:
+        from scripts.lark_wiki.config import build_config
+
+        (self.root / "state" / "llm_wiki_v1.local.toml").write_text(
+            "\n".join(
+                [
+                    "[llm]",
+                    'provider = "command"',
+                    "max_assets_per_prompt = 99",
+                    "max_chars_per_asset = 99999",
+                    "",
+                    "[agent_synthesis]",
+                    "max_assets_per_prompt = 3",
+                    "max_chars_per_asset = 1200",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        config = build_config(self.root)
+
+        self.assertEqual(config.agent_max_assets_per_prompt, 3)
+        self.assertEqual(config.agent_max_chars_per_asset, 1200)
+
+    def test_legacy_llm_config_alone_does_not_change_agent_synthesis_limits(self) -> None:
+        from scripts.lark_wiki.config import build_config
+
+        (self.root / "state" / "llm_wiki_v1.local.toml").write_text(
+            "\n".join(
+                [
+                    "[llm]",
+                    'provider = "command"',
+                    "max_assets_per_prompt = 99",
+                    "max_chars_per_asset = 99999",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        config = build_config(self.root)
+
+        self.assertEqual(config.agent_max_assets_per_prompt, 6)
+        self.assertEqual(config.agent_max_chars_per_asset, 3500)
+
+    def test_docs_fetch_full_uses_v2_markdown_document_content(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki import lark_cli
+
+        config = build_config(self.root)
+        calls: list[list[str]] = []
+        original = lark_cli.run_lark
+
+        def fake_run_lark(config, args, allow_empty: bool = False):
+            calls.append(args)
+            return {
+                "data": {
+                    "document": {
+                        "content": "<title>Remote Title</title>\n\n# Remote Title\n\nBody",
+                        "document_id": "doc123",
+                        "revision_id": 7,
+                    }
+                }
+            }
+
+        try:
+            lark_cli.run_lark = fake_run_lark
+            result = lark_cli.docs_fetch_full(config, "doc-token")
+        finally:
+            lark_cli.run_lark = original
+
+        self.assertEqual(result["doc_id"], "doc123")
+        self.assertEqual(result["title"], "Remote Title")
+        self.assertEqual(result["markdown"], "# Remote Title\n\nBody")
+        self.assertEqual(calls[0][:7], ["docs", "+fetch", "--api-version", "v2", "--as", "user", "--doc"])
+        self.assertIn("--doc-format", calls[0])
+        self.assertIn("markdown", calls[0])
+
+    def test_create_or_update_doc_uses_v2_overwrite_content(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.sync import docs as sync_docs
+
+        config = build_config(self.root)
+        calls: list[list[str]] = []
+        original = sync_docs.run_lark
+
+        def fake_run_lark(config, args, allow_empty: bool = False):
+            calls.append(args)
+            return {
+                "data": {
+                    "document": {
+                        "url": "https://example.feishu.cn/docx/doc123",
+                        "document_id": "doc123",
+                    }
+                }
+            }
+
+        try:
+            sync_docs.run_lark = fake_run_lark
+            url, doc_token, node_token = sync_docs.create_or_update_doc(
+                config,
+                "Remote Title",
+                "# Remote Title\n\nBody",
+                mirror_doc_token="doc123",
+            )
+        finally:
+            sync_docs.run_lark = original
+
+        self.assertEqual(url, "https://example.feishu.cn/docx/doc123")
+        self.assertEqual(doc_token, "doc123")
+        self.assertEqual(node_token, "")
+        self.assertEqual(calls[0][:8], ["docs", "+update", "--api-version", "v2", "--as", "user", "--doc", "doc123"])
+        self.assertIn("--command", calls[0])
+        self.assertIn("overwrite", calls[0])
+        self.assertIn("--doc-format", calls[0])
+        self.assertIn("markdown", calls[0])
+        self.assertIn("--content", calls[0])
+        self.assertIn("# Remote Title\n\nBody", calls[0])
+        self.assertNotIn("--mode", calls[0])
+        self.assertNotIn("--markdown", calls[0])
+
     def test_config_loads_with_system_python_tomli_fallback(self) -> None:
         interpreter = Path("/usr/bin/python3")
         if not interpreter.exists():
@@ -474,6 +615,34 @@ class LarkWikiStarterTests(unittest.TestCase):
         markdown_text = markdown_reports[-1].read_text(encoding="utf-8")
         self.assertIn("unregistered_page", markdown_text)
         self.assertIn("broken_link", markdown_text)
+        conn.close()
+
+    def test_inventory_allows_real_pages_to_discuss_demos_without_placeholder_flag(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+        from scripts.lark_wiki.inventory import inventory
+
+        config = build_config(self.root)
+        conn = open_db(config)
+        page_id = self._write_inventory_page(
+            conn,
+            config,
+            short_id="real-report",
+            title="AI Trade Control Plane",
+            page_type="Report",
+            rel_path="reports/real_report.md",
+            body="# AI Trade Control Plane\n\n不要做 AI demo 野系统，要沉淀正式页面、正式对象和可复盘动作。\n",
+        )
+        conn.commit()
+
+        result = inventory(conn, config, namespace_key=self.PROJECT_NAMESPACE)
+
+        page_issues = [
+            issue
+            for issue in result["issues"]
+            if isinstance(issue, dict) and issue.get("page_id") == page_id
+        ]
+        self.assertNotIn("demo_content", {str(issue.get("issue_type")) for issue in page_issues})
         conn.close()
 
     def test_inventory_relation_scores_prioritize_links_and_shared_sources(self) -> None:
@@ -1244,8 +1413,8 @@ class LarkWikiStarterTests(unittest.TestCase):
         from scripts.lark_wiki.db import open_db
         from scripts.lark_wiki.graphify import graphify_import
         from scripts.lark_wiki.query import query
+        from scripts.lark_wiki.llm_compile import AGENT_SYNTHESIS_MARKER
 
-        (self.root / "state" / "llm_wiki_v1.local.toml").write_text('[llm]\nprovider = "mock"\n', encoding="utf-8")
         config = build_config(self.root)
         conn = open_db(config)
         self._write_inventory_page(
@@ -1310,8 +1479,9 @@ class LarkWikiStarterTests(unittest.TestCase):
         self.assertIn("layer=graphify", report_text)
         self.assertIn("## Synthesis Context", report_text)
         self.assertIn("project::agent_workspace::disk-related", report_text)
-        self.assertIn("handoff appears only in this disk page", report_text)
-        self.assertIn("Related page without the direct search word", report_text)
+        # Synthesis is an agent task block (no model call): it references the surfaced
+        # pages for the host IDE agent to read, rather than inlining their bodies.
+        self.assertIn(AGENT_SYNTHESIS_MARKER, report_text)
         conn.close()
 
     def test_agent_context_combines_inventory_graphify_and_candidates(self) -> None:
@@ -1577,6 +1747,345 @@ class LarkWikiStarterTests(unittest.TestCase):
         self.assertIn("python3 scripts/lark_wiki.py graphify_import", agents)
         self.assertIn("Graphify relations are secondary signals", contract)
         self.assertIn("Paper Evidence Workbench drafts stay sidecar", contract)
+
+    def test_detect_claim_contradictions_flags_conflicting_values(self) -> None:
+        from scripts.lark_wiki.llm_compile import detect_claim_contradictions
+
+        pages = [
+            {"page_id": "p1", "body": "Claim: capital_total => 150万\nClaim: shared => same"},
+            {"page_id": "p2", "body": "Claim: capital_total => 100万\nClaim: shared => same"},
+        ]
+        findings = detect_claim_contradictions(pages)
+        claims = {finding["claim"] for finding in findings}
+        self.assertIn("capital_total", claims)
+        self.assertNotIn("shared", claims)
+        conflict = next(finding for finding in findings if finding["claim"] == "capital_total")
+        self.assertEqual(conflict["page_ids"], "p1, p2")
+
+    def test_lint_flags_cross_page_contradiction_without_llm(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+        from scripts.lark_wiki.lint import lint
+
+        config = build_config(self.root)
+        conn = open_db(config)
+        overview_id = self._page_id("overview")
+        self._write_inventory_page(
+            conn,
+            config,
+            short_id="home",
+            title="Home",
+            page_type="Home",
+            rel_path="00_Home.md",
+            body="# Home\n\nClaim: steam_daily_sales => 150\n",
+            links_to=[overview_id],
+        )
+        self._write_inventory_page(
+            conn,
+            config,
+            short_id="overview",
+            title="Overview",
+            page_type="Concept",
+            rel_path="concepts/overview.md",
+            body="# Overview\n\nClaim: steam_daily_sales => 100\n",
+        )
+
+        # No model is ever called; the contradiction check is deterministic and always-on.
+        lint(conn, config, namespace_key=self.PROJECT_NAMESPACE)
+        contradiction_count = conn.execute(
+            "SELECT COUNT(*) FROM issues "
+            "WHERE namespace_key = ? AND issue_type = 'semantic_contradiction' AND status = 'open'",
+            (self.PROJECT_NAMESPACE,),
+        ).fetchone()[0]
+        self.assertGreaterEqual(contradiction_count, 1)
+        conn.close()
+
+    def test_compile_page_markdown_emits_agent_task_block(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+        from scripts.lark_wiki.llm_compile import AGENT_SYNTHESIS_MARKER, compile_page_markdown
+
+        config = build_config(self.root)
+        conn = open_db(config)
+        self._write_inventory_page(
+            conn,
+            config,
+            short_id="src-page",
+            title="Src",
+            page_type="Concept",
+            rel_path="concepts/src.md",
+            body="# Src\n\nSome grounded content.\n",
+        )
+        out = compile_page_markdown(
+            conn,
+            config,
+            namespace_key=self.PROJECT_NAMESPACE,
+            title="T",
+            page_type="Concept",
+            base_body="body",
+            source_ids=[self._page_asset_key("src-page")],
+        )
+        self.assertIn(AGENT_SYNTHESIS_MARKER, out)
+        empty = compile_page_markdown(
+            conn,
+            config,
+            namespace_key=self.PROJECT_NAMESPACE,
+            title="T",
+            page_type="Concept",
+            base_body="body",
+            source_ids=[],
+        )
+        self.assertEqual(empty, "")
+        conn.close()
+
+    def test_read_frontmatter_tolerates_unterminated_fence(self) -> None:
+        from scripts.lark_wiki.markdown import read_frontmatter
+
+        path = self.root / "unterminated.md"
+        text = '---\n{"title": "No Close Fence"}\n\nbody continues with no closing fence\n'
+        path.write_text(text, encoding="utf-8")
+
+        frontmatter, body = read_frontmatter(path)
+
+        self.assertEqual(frontmatter, {})
+        self.assertEqual(body, text)
+
+    def test_read_frontmatter_tolerates_invalid_json(self) -> None:
+        from scripts.lark_wiki.markdown import read_frontmatter
+
+        path = self.root / "bad_json.md"
+        text = "---\n{bad json}\n---\n\n# Real Body\n"
+        path.write_text(text, encoding="utf-8")
+
+        frontmatter, body = read_frontmatter(path)
+
+        self.assertEqual(frontmatter, {})
+        self.assertEqual(body, text)
+
+    def test_normalize_markdown_for_sync_tolerates_feishu_v2_roundtrip(self) -> None:
+        from scripts.lark_wiki.markdown import normalize_markdown_for_sync
+
+        local = "\n".join(
+            [
+                "# Title",
+                "",
+                "| A | B |",
+                "|---|---|",
+                "| one | two |",
+                "",
+                "- `Concept` AIOS OS Canonical Knowledge | inbound=9",
+                "- **P0**（现在~6月底）：AI 交易平台 V0 上线闸门。",
+                "```Plain Text",
+                "body",
+                "```",
+                "",
+            ]
+        )
+        remote = "\n".join(
+            [
+                "# Title",
+                "",
+                "| A | B |",
+                "|-|-|",
+                "| one | two |",
+                "",
+                "- `Concept`AIOS OS Canonical Knowledge | inbound=9",
+                "- **P0**（现在\\~6月底）：AI 交易平台 V0 上线闸门。",
+                "```Plain",
+                "body",
+                "```",
+                "",
+            ]
+        )
+
+        self.assertEqual(normalize_markdown_for_sync(local), normalize_markdown_for_sync(remote))
+
+    def test_build_graph_survives_malformed_frontmatter_page(self) -> None:
+        from scripts.lark_wiki.compiler.graph import build_graph
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+
+        config = build_config(self.root)
+        conn = open_db(config)
+        ids = self._build_inventory_fixture(conn, config)
+        malformed_path = (
+            config.wiki_src_dir / "projects" / "agent_workspace" / "concepts" / "malformed.md"
+        )
+        malformed_path.parent.mkdir(parents=True, exist_ok=True)
+        malformed_path.write_text("---\n{bad json}\n\nmalformed page body\n", encoding="utf-8")
+
+        result = build_graph(conn, config, namespace_key=self.PROJECT_NAMESPACE)
+
+        graph_payload = json.loads((config.root / str(result["graph_path"])).read_text(encoding="utf-8"))
+        node_ids = {node["page_id"] for node in graph_payload["nodes"]}
+        self.assertTrue(set(ids.values()).issubset(node_ids))
+        conn.close()
+
+    def test_cli_sync_push_with_conflicts_reports_failure(self) -> None:
+        from scripts.lark_wiki import cli
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+
+        repo_root = Path(__file__).resolve().parents[1]
+        shutil.copytree(
+            repo_root / "scripts",
+            self.root / "scripts",
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+        config = build_config(self.root)
+        conn = open_db(config)
+        conn.close()
+
+        original_push = cli.sync_push
+        original_build_config = cli.build_config
+        original_argv = sys.argv
+
+        def fake_push(_conn, _config, *, namespace_key, limit=0):
+            return {
+                "synced": [],
+                "conflicts": ["project::agent_workspace::home"],
+                "namespace_key": namespace_key,
+            }
+
+        captured: dict[str, object] = {}
+        import io
+        from contextlib import redirect_stdout
+
+        buffer = io.StringIO()
+        try:
+            cli.sync_push = fake_push
+            cli.build_config = lambda root=None: build_config(self.root)
+            sys.argv = ["lark_wiki.py", "sync_push", "--namespace", self.PROJECT_NAMESPACE]
+            with redirect_stdout(buffer):
+                with self.assertRaises(SystemExit) as ctx:
+                    cli.main()
+            captured["code"] = ctx.exception.code
+        finally:
+            cli.sync_push = original_push
+            cli.build_config = original_build_config
+            sys.argv = original_argv
+
+        self.assertNotEqual(captured["code"], 0)
+        payload = json.loads(buffer.getvalue())
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["command"], "sync_push")
+        self.assertEqual(payload["conflicts"], 1)
+
+        verify_conn = open_db(config)
+        status = verify_conn.execute(
+            "SELECT status FROM runs WHERE command_name = 'sync_push' ORDER BY started_at DESC LIMIT 1"
+        ).fetchone()[0]
+        verify_conn.close()
+        self.assertEqual(status, "failed")
+
+    def test_query_uses_internal_relations_without_graphify_artifacts(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+        from scripts.lark_wiki.query import query
+
+        config = build_config(self.root)
+        conn = open_db(config)
+        self._write_inventory_page(
+            conn,
+            config,
+            short_id="direct-hit",
+            title="Direct Hit Page",
+            page_type="Report",
+            rel_path="reports/direct_hit_page.md",
+            body="# Direct Hit Page\n\nhandoff keyword appears here.\n",
+            source_ids=["SRC::shared"],
+        )
+        self._write_inventory_page(
+            conn,
+            config,
+            short_id="internal-related",
+            title="Internal Related Page",
+            page_type="Concept",
+            rel_path="concepts/internal_related_page.md",
+            body="# Internal Related Page\n\nNo matching keyword in this body.\n",
+            source_ids=["SRC::shared"],
+        )
+        conn.commit()
+        self.assertFalse((config.root / "graphify-out").exists())
+
+        result = query(conn, config, "handoff", namespace_key=self.PROJECT_NAMESPACE)
+        report_text = (config.root / str(result["report_page"])).read_text(encoding="utf-8")
+
+        self.assertEqual(result["match_count"], 1)
+        self.assertGreaterEqual(result["graphify_related_count"], 1)
+        self.assertIn("## Graphify 相关页面", report_text)
+        self.assertIn("Internal Related Page", report_text)
+        self.assertIn("shared_source", report_text)
+        conn.close()
+
+    def test_lint_does_not_flag_generated_query_reports_as_orphans(self) -> None:
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db
+        from scripts.lark_wiki.lint import lint
+        from scripts.lark_wiki.query import query
+
+        config = build_config(self.root)
+        conn = open_db(config)
+
+        result = query(conn, config, "missing topic", namespace_key=self.PROJECT_NAMESPACE)
+        lint(conn, config, namespace_key=self.PROJECT_NAMESPACE)
+        report_page_id = self._page_id("query-missing-topic")
+        self.assertTrue((config.root / str(result["report_page"])).exists())
+        orphan_count = conn.execute(
+            "SELECT COUNT(*) FROM issues WHERE namespace_key = ? AND issue_type = 'orphan_page' AND page_id = ?",
+            (self.PROJECT_NAMESPACE, report_page_id),
+        ).fetchone()[0]
+
+        self.assertEqual(orphan_count, 0)
+        conn.close()
+
+
+    def test_compile_sources_compiles_summaries_and_flags_contradiction(self) -> None:
+        from scripts.lark_wiki.compiler.pages import compile_sources
+        from scripts.lark_wiki.config import build_config
+        from scripts.lark_wiki.db import open_db, upsert_asset
+        from scripts.lark_wiki.llm_compile import AGENT_SYNTHESIS_MARKER
+        from scripts.lark_wiki.utils import sha256_text
+
+        config = build_config(self.root)
+        conn = open_db(config)
+        raw = self.root / "knowledge" / "raw"
+        raw.mkdir(parents=True, exist_ok=True)
+        for name, val in (("src1", "150"), ("src2", "100")):
+            path = raw / f"{name}.md"
+            path.write_text(f"# {name}\n\nClaim: steam_daily_sales => {val}\n", encoding="utf-8")
+            upsert_asset(
+                conn,
+                asset_key=f"LOCAL::knowledge/raw/{name}.md",
+                asset_class="local_file",
+                title=name,
+                local_path=f"knowledge/raw/{name}.md",
+                upstream_system="unit_test",
+                source_hash=sha256_text(path.read_text(encoding="utf-8")),
+                canonical_role="raw_source",
+                sync_mode="bidirectional_markdown_safe",
+                portfolio_key=config.portfolio_key,
+                namespace_key=self.PROJECT_NAMESPACE,
+                classification_status="classified",
+                metadata={},
+            )
+        conn.commit()
+
+        result = compile_sources(conn, config, namespace_key=self.PROJECT_NAMESPACE)
+
+        # Each raw source compiled into a summary page...
+        self.assertEqual(result["compiled_source_count"], 2)
+        summary_pages = conn.execute(
+            "SELECT COUNT(*) FROM pages WHERE namespace_key = ? AND page_type = 'Summary'",
+            (self.PROJECT_NAMESPACE,),
+        ).fetchone()[0]
+        self.assertEqual(summary_pages, 2)
+        # ...and the conflicting claim across the two sources is flagged.
+        self.assertGreaterEqual(result["contradiction_count"], 1)
+        bodies = "\n".join(p.read_text(encoding="utf-8") for p in config.wiki_src_dir.rglob("source-summary-*.md"))
+        self.assertIn(AGENT_SYNTHESIS_MARKER, bodies)  # tool emits an agent task block, never a model call
+        self.assertIn("Claim: steam_daily_sales", bodies)  # claims lifted from source into wiki
+        conn.close()
 
 
 if __name__ == "__main__":

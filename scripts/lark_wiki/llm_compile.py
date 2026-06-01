@@ -3,16 +3,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import re
-import shlex
-import shutil
 import sqlite3
-import subprocess
-import tempfile
-from pathlib import Path
-from typing import Any
 
 from .config import AppConfig
 from .utils import read_text_safe
+
+# HARD BOUNDARY: this module is 100% deterministic and NEVER calls an LLM
+# provider / API / model subprocess. Per the project's locked design rule, the
+# "LLM" is the host IDE agent (Claude Code / Codex) that is already operating the
+# repo and follows AGENTS.md. These helpers only gather grounded source context,
+# lift claims, and emit an explicit *agent task block* for that host agent to
+# fill in. The tool performs no model inference of any kind.
+
+AGENT_SYNTHESIS_MARKER = "AGENT SYNTHESIS TASK"
 
 
 @dataclass(frozen=True)
@@ -22,25 +25,6 @@ class AssetContext:
     asset_class: str
     namespace_key: str
     snippet: str
-
-
-def llm_provider_name(config: AppConfig) -> str:
-    provider = (config.llm_provider or "disabled").strip().lower()
-    if provider == "auto":
-        if shutil.which("codex"):
-            return "codex_exec"
-        if config.llm_command:
-            return "command"
-        return "disabled"
-    if provider == "codex_exec" and not shutil.which("codex"):
-        return "disabled"
-    if provider == "command" and not config.llm_command:
-        return "disabled"
-    return provider
-
-
-def llm_enabled(config: AppConfig) -> bool:
-    return llm_provider_name(config) != "disabled"
 
 
 def _truncate(text: str, limit: int) -> str:
@@ -102,7 +86,7 @@ def collect_asset_context(
         ).fetchone()
         if not row:
             continue
-        snippet = _truncate(_asset_text_from_row(config, row), config.llm_max_chars_per_asset)
+        snippet = _truncate(_asset_text_from_row(config, row), config.agent_max_chars_per_asset)
         contexts.append(
             AssetContext(
                 asset_key=row["asset_key"],
@@ -112,102 +96,42 @@ def collect_asset_context(
                 snippet=snippet,
             )
         )
-        if len(contexts) >= config.llm_max_assets_per_prompt:
+        if len(contexts) >= config.agent_max_assets_per_prompt:
             break
     return contexts
 
 
-def _payload_to_prompt(payload: dict[str, Any], *, expect_json: bool) -> str:
-    output_instruction = (
-        "Return valid JSON only, with no markdown fences or explanation."
-        if expect_json
-        else "Return markdown only, with no code fences or prefatory text."
-    )
-    return "\n".join(
-        [
-            "You are the grounded knowledge compiler for a local-first portfolio wiki.",
-            "Use only the supplied sources. Do not fabricate facts. Prefer synthesis, contradictions, implications, and open questions.",
-            "Cite asset keys inline when making non-obvious claims, e.g. `(source: ASSET_KEY)`.",
-            output_instruction,
-            "",
-            json.dumps(payload, ensure_ascii=False, indent=2),
-        ]
-    )
-
-
-def _run_codex_exec(config: AppConfig, prompt: str) -> str:
-    with tempfile.TemporaryDirectory(prefix="lark-wiki-") as tmpdir:
-        prompt_path = Path(tmpdir) / "prompt.txt"
-        output_path = Path(tmpdir) / "output.txt"
-        prompt_path.write_text(prompt, encoding="utf-8")
-        cmd = [
-            "codex",
-            "exec",
-            "-C",
-            str(config.root),
-            "--sandbox",
-            "read-only",
-            "--skip-git-repo-check",
-            "--output-last-message",
-            str(output_path),
-            "-",
-        ]
-        if config.llm_model:
-            cmd.extend(["-m", config.llm_model])
-        with prompt_path.open("r", encoding="utf-8") as handle:
-            subprocess.run(
-                cmd,
-                stdin=handle,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=config.llm_timeout_seconds,
-                check=True,
-            )
-        return output_path.read_text(encoding="utf-8").strip()
-
-
-def _run_command_provider(config: AppConfig, payload: dict[str, Any]) -> str:
-    cmd = shlex.split(config.llm_command)
-    proc = subprocess.run(
-        cmd,
-        input=json.dumps(payload, ensure_ascii=False),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=config.llm_timeout_seconds,
-        check=True,
-    )
-    return proc.stdout.strip()
-
-
-def _mock_markdown(payload: dict[str, Any]) -> str:
-    contexts = payload.get("contexts", []) or []
-    page_contexts = payload.get("page_contexts", []) or []
-    asset_keys = [item.get("asset_key", "") for item in contexts][:3]
-    theme_lines = []
-    for item in contexts[:3]:
-        snippet = _truncate(str(item.get("snippet", "")).replace("\n", " "), 120)
-        theme_lines.append(f"- `{item.get('asset_key', '')}`：{snippet}")
-    for item in page_contexts[:3]:
-        snippet = _truncate(str(item.get("snippet", "")).replace("\n", " "), 120)
-        theme_lines.append(f"- `{item.get('page_id', '')}`：{snippet}")
+def agent_synthesis_task(*, title: str, source_keys: list[str], page_keys: list[str] | None = None) -> str:
+    """Return a deterministic task block instructing the host IDE agent to write
+    the synthesis. No model is called here — the agent (Claude Code / Codex)
+    fills this in while operating the repo, per AGENTS.md."""
+    refs = ", ".join(f"`{key}`" for key in source_keys) or "（无来源）"
     lines = [
-        f"### Grounded Summary",
-        f"- Page intent: {payload.get('title', 'Untitled')}",
-        f"- Sources consulted: {', '.join(asset_keys) if asset_keys else 'none'}",
+        f"> 🧠 **{AGENT_SYNTHESIS_MARKER}** — 由当前操作仓库的 IDE agent（Claude Code / Codex）按 `AGENTS.md` 完成；本工具不调用任何 LLM provider/API。",
+        "> 阅读下列来源，写出 grounded 综合（结论 / 证据 / 矛盾 / 待解问题），非显然结论用 `(source: KEY)` 标注。",
+        f"> 主题：{title}",
+        f"> 来源：{refs}",
     ]
-    if theme_lines:
-        lines.extend(["", "### Evidence Highlights", *theme_lines])
-    return "\n".join(lines).strip()
+    page_keys = page_keys or []
+    if page_keys:
+        lines.append("> 相关页：" + ", ".join(f"`{key}`" for key in page_keys))
+    return "\n".join(lines)
 
 
-def _mock_semantic_lint(payload: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
+_CLAIM_PATTERN = re.compile(r"Claim:\s*(.+?)\s*=>\s*(.+)")
+
+
+def detect_claim_contradictions(pages: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Deterministically flag conflicting ``Claim: <key> => <value>`` lines across pages.
+
+    LLM-free so this contradiction check can run on every lint, even with no provider —
+    this is the "noting where new data contradicts old claims" property of the wiki.
+    """
     claim_map: dict[str, set[tuple[str, str]]] = {}
-    for page in payload.get("pages", []) or []:
+    for page in pages or []:
         page_id = str(page.get("page_id", ""))
         body = str(page.get("body", ""))
-        for match in re.finditer(r"Claim:\s*(.+?)\s*=>\s*(.+)", body):
+        for match in _CLAIM_PATTERN.finditer(body):
             lhs = match.group(1).strip()
             rhs = match.group(2).strip()
             claim_map.setdefault(lhs, set()).add((rhs, page_id))
@@ -219,38 +143,11 @@ def _mock_semantic_lint(payload: dict[str, Any]) -> dict[str, list[dict[str, str
                 {
                     "claim": lhs,
                     "page_ids": ", ".join(sorted({page_id for _, page_id in rhs_pairs})),
-                    "detail": "Conflicting mock claim values",
+                    "values": "; ".join(sorted(values)),
+                    "detail": "Conflicting claim values across pages",
                 }
             )
-    return {
-        "contradictions": contradictions,
-        "stale_claims": [],
-        "missing_pages": [],
-        "missing_cross_references": [],
-    }
-
-
-def _invoke_text(config: AppConfig, payload: dict[str, Any]) -> str:
-    provider = llm_provider_name(config)
-    if provider == "disabled":
-        return ""
-    if provider == "mock":
-        return _mock_markdown(payload)
-    if provider == "command":
-        return _run_command_provider(config, payload)
-    if provider == "codex_exec":
-        return _run_codex_exec(config, _payload_to_prompt(payload, expect_json=False))
-    raise RuntimeError(f"Unsupported LLM provider: {provider}")
-
-
-def _invoke_json(config: AppConfig, payload: dict[str, Any]) -> dict[str, Any]:
-    provider = llm_provider_name(config)
-    if provider == "disabled":
-        return {}
-    if provider == "mock":
-        return _mock_semantic_lint(payload)
-    raw = _run_command_provider(config, payload) if provider == "command" else _run_codex_exec(config, _payload_to_prompt(payload, expect_json=True))
-    return json.loads(raw)
+    return sorted(contradictions, key=lambda item: item["claim"])
 
 
 def compile_page_markdown(
@@ -263,18 +160,12 @@ def compile_page_markdown(
     base_body: str,
     source_ids: list[str],
 ) -> str:
+    """Emit an agent synthesis task for a page (no model call). Empty when there
+    are no grounded sources to synthesize."""
     contexts = collect_asset_context(conn, config, source_ids)
     if not contexts:
         return ""
-    payload = {
-        "task": "page_synthesis",
-        "namespace_key": namespace_key,
-        "title": title,
-        "page_type": page_type,
-        "base_body": base_body,
-        "contexts": [context.__dict__ for context in contexts],
-    }
-    return _invoke_text(config, payload)
+    return agent_synthesis_task(title=title, source_keys=[context.asset_key for context in contexts])
 
 
 def compile_query_markdown(
@@ -284,63 +175,20 @@ def compile_query_markdown(
     namespace_key: str,
     keyword: str,
     asset_keys: list[str],
-    graph_context: dict[str, Any] | None = None,
+    graph_context: dict[str, object] | None = None,
 ) -> str:
+    """Emit an agent synthesis task for a query report (no model call)."""
     contexts = collect_asset_context(conn, config, asset_keys)
-    page_contexts = []
+    page_contexts: list[dict[str, object]] = []
     if graph_context:
         raw_page_contexts = graph_context.get("related_page_contexts", [])
         if isinstance(raw_page_contexts, list):
             page_contexts = [item for item in raw_page_contexts if isinstance(item, dict)]
     if not contexts and not page_contexts:
         return ""
-    payload = {
-        "task": "query_synthesis",
-        "namespace_key": namespace_key,
-        "keyword": keyword,
-        "title": f"Query Report: {keyword}",
-        "contexts": [context.__dict__ for context in contexts],
-        "page_contexts": page_contexts,
-        "graph_context": graph_context or {},
-    }
-    return _invoke_text(config, payload)
-
-
-def semantic_lint_namespace(
-    conn: sqlite3.Connection,
-    config: AppConfig,
-    *,
-    namespace_key: str,
-) -> dict[str, list[dict[str, str]]]:
-    if not config.llm_semantic_lint_enabled or not llm_enabled(config):
-        return {}
-    page_rows = conn.execute(
-        """
-        SELECT page_id, local_path
-        FROM pages
-        WHERE namespace_key = ?
-        ORDER BY page_id
-        LIMIT 24
-        """,
-        (namespace_key,),
-    ).fetchall()
-    pages: list[dict[str, str]] = []
-    for row in page_rows:
-        path = config.root / str(row["local_path"] or "")
-        body = read_text_safe(path) if path.exists() else ""
-        pages.append({"page_id": row["page_id"], "body": _truncate(body, config.llm_max_chars_per_asset)})
-    payload = {
-        "task": "semantic_lint",
-        "namespace_key": namespace_key,
-        "pages": pages,
-        "schema": {
-            "contradictions": [{"claim": "text", "page_ids": "comma-separated ids", "detail": "text"}],
-            "stale_claims": [{"page_ids": "ids", "detail": "text"}],
-            "missing_pages": [{"detail": "text"}],
-            "missing_cross_references": [{"page_ids": "ids", "detail": "text"}],
-        },
-    }
-    result = _invoke_json(config, payload)
-    if not isinstance(result, dict):
-        return {}
-    return result
+    page_keys = [str(item.get("page_id", "")) for item in page_contexts if item.get("page_id")]
+    return agent_synthesis_task(
+        title=f"Query: {keyword}",
+        source_keys=[context.asset_key for context in contexts],
+        page_keys=page_keys,
+    )

@@ -21,6 +21,6 @@
 
 ## Namespace Snapshot
 
-- `inbox` Inbox | assets=0 | pages=0
-- `project::agent_workspace` Agent Workspace | assets=5 | pages=0
+- `inbox` Inbox | assets=30 | pages=0
+- `project::agent_workspace` Agent Workspace | assets=26 | pages=12
 - `shared` Shared | assets=0 | pages=0

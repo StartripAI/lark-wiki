@@ -19,23 +19,23 @@
 
 ## 最近运行
 
-- `2026-04-28T17:03:06+08:00` | `fusion_demo` | `running`
-- `2026-04-28T17:01:42+08:00` | `fusion_demo` | `success`
-- `2026-04-28T17:00:38+08:00` | `fusion_demo` | `success`
-- `2026-04-28T16:57:33+08:00` | `fusion_demo` | `success`
-- `2026-04-28T16:51:54+08:00` | `inventory` | `success`
-- `2026-04-28T16:51:54+08:00` | `agent_context` | `success`
-- `2026-04-28T16:51:54+08:00` | `query` | `success`
-- `2026-04-28T16:46:44+08:00` | `agent_context` | `success`
-- `2026-04-28T16:44:28+08:00` | `build_graph` | `success`
-- `2026-04-28T16:44:16+08:00` | `query` | `success`
-- `2026-04-28T16:43:43+08:00` | `agent_context` | `success`
-- `2026-04-28T16:43:36+08:00` | `query` | `success`
-- `2026-04-28T16:43:33+08:00` | `build_graph` | `success`
-- `2026-04-28T16:43:29+08:00` | `agent_context` | `success`
-- `2026-04-28T16:43:25+08:00` | `graphify_candidates` | `success`
-- `2026-04-28T16:18:32+08:00` | `graphify_candidates` | `success`
-- `2026-04-28T16:18:32+08:00` | `agent_context` | `success`
-- `2026-04-28T16:18:32+08:00` | `build_graph` | `success`
-- `2026-04-28T16:18:32+08:00` | `query` | `success`
-- `2026-04-28T16:17:02+08:00` | `inventory` | `success`
+- `2026-05-29T17:52:44+08:00` | `build_graph` | `running`
+- `2026-05-29T17:50:59+08:00` | `agent_context` | `success`
+- `2026-05-29T17:50:35+08:00` | `lint` | `success`
+- `2026-05-29T17:50:34+08:00` | `build_graph` | `success`
+- `2026-05-29T17:49:58+08:00` | `lint` | `success`
+- `2026-05-29T17:49:50+08:00` | `build_graph` | `success`
+- `2026-05-29T17:49:44+08:00` | `inventory` | `success`
+- `2026-05-29T17:49:34+08:00` | `agent_context` | `success`
+- `2026-05-29T17:49:27+08:00` | `agent_context` | `success`
+- `2026-05-29T17:49:02+08:00` | `lint` | `success`
+- `2026-05-29T17:48:26+08:00` | `lint` | `success`
+- `2026-05-29T17:46:51+08:00` | `lint` | `success`
+- `2026-05-29T10:42:25+08:00` | `sync_push` | `failed`
+- `2026-05-28T14:34:10+08:00` | `query` | `success`
+- `2026-05-28T14:32:55+08:00` | `agent_context` | `success`
+- `2026-05-28T14:14:38+08:00` | `query` | `success`
+- `2026-05-28T14:14:27+08:00` | `agent_context` | `success`
+- `2026-05-28T11:36:25+08:00` | `agent_context` | `success`
+- `2026-05-26T14:33:25+08:00` | `lint` | `success`
+- `2026-05-26T14:31:36+08:00` | `sync_push` | `success`

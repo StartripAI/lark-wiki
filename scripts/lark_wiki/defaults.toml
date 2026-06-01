@@ -25,14 +25,9 @@ lark_wiki_space = "my_library"
 [sync]
 markdown_safe_page_types = ["Home", "Index", "Log", "Source", "Concept", "Entity", "Report", "Legacy"]
 
-[llm]
-provider = "disabled"
-model = "gpt-5.4-mini"
-command = ""
-timeout_seconds = 180
+[agent_synthesis]
 max_assets_per_prompt = 6
 max_chars_per_asset = 3500
-semantic_lint_enabled = true
 
 [runtime]
 lark_cli_version = "1.0.19"

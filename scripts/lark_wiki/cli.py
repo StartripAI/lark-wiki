@@ -69,6 +69,14 @@ RUN_COMMANDS = {
 }
 
 
+def _result_list(result: object, key: str) -> list:
+    if isinstance(result, dict):
+        value = result.get(key)
+        if isinstance(value, list):
+            return value
+    return []
+
+
 def default_namespace_for(command_name: str, config) -> str:
     if command_name == "inventory":
         return ""
@@ -276,11 +284,37 @@ def main() -> None:
             "sync_ops_base": lambda c, cfg, a: sync_ops_base(c, cfg),
         }
         result = command_handlers[args.command](conn, config, args)
+        if args.command in {"sync_push", "sync_pull"}:
+            conflicts = _result_list(result, "conflicts")
+            errors = _result_list(result, "errors")
+            if conflicts or errors:
+                finish_run(
+                    conn,
+                    run_id,
+                    status="failed",
+                    error_text=f"sync surfaced {len(conflicts)} conflict(s) and {len(errors)} error(s)",
+                    summary=result,
+                )
+                print(
+                    json_dumps(
+                        {
+                            "ok": False,
+                            "command": args.command,
+                            "namespace_key": namespace_key,
+                            "conflicts": len(conflicts),
+                            "errors": len(errors),
+                            "result": result,
+                        }
+                    )
+                )
+                raise SystemExit(1)
         finish_run(conn, run_id, status="success", summary=result)
         if args.command in {"graphify_query", "graphify_path", "graphify_explain"}:
             print(json_dumps({"command": args.command, "namespace_key": namespace_key, **result}))
             return
         print(json_dumps({"ok": True, "command": args.command, "namespace_key": namespace_key, "result": result}))
+    except SystemExit:
+        raise
     except Exception as exc:
         finish_run(conn, run_id, status="failed", error_text=str(exc), summary={"command": args.command, "namespace_key": namespace_key})
         raise

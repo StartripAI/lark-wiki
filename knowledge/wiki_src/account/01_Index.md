@@ -20,5 +20,4 @@
 ## Canonical 页面
 
 - `Home` [Agent Workspace LLM Wiki](knowledge/wiki_src/account/00_Home.md) | inbound=2 | sources=0
-- `Index` [Portfolio Index](knowledge/wiki_src/account/01_Index.md) | inbound=2 | sources=0
 - `Log` [Portfolio Run Log](knowledge/wiki_src/account/02_Log.md) | inbound=2 | sources=0

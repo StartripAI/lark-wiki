@@ -2,16 +2,14 @@
 
 `lark-wiki` 的主流程是本地 Markdown 加 `lark-cli`。可选分析层只做两件事：帮你把论文证据放稳，帮相关页面互相找到。
 
-## LLM Provider
+## Agent-Native Synthesis
 
-LLM provider 只处理你明确传入的来源，用来生成摘要、提示可能的冲突和遗漏。不开也可以跑确定性的编译、同步和 `inventory`。
+工具不调用任何 LLM provider/API/模型子进程。需要综合时，`ingest` / `query` 只生成 `AGENT SYNTHESIS TASK` 占位；正在操作仓库的 IDE agent 按 `AGENTS.md` 亲自阅读来源、替换占位、标注 source key。
 
 ```toml
-[llm]
-provider = "auto"
-model = "gpt-5.4-mini"
-timeout_seconds = 180
-semantic_lint_enabled = true
+[agent_synthesis]
+max_assets_per_prompt = 6
+max_chars_per_asset = 3500
 ```
 
 ## Knowledge Relation Map

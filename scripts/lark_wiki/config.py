@@ -44,13 +44,8 @@ class AppConfig:
     text_scan_suffixes: set[str]
     excluded_prefixes: tuple[str, ...]
     markdown_safe_page_types: set[str]
-    llm_provider: str
-    llm_model: str
-    llm_command: str
-    llm_timeout_seconds: int
-    llm_max_assets_per_prompt: int
-    llm_max_chars_per_asset: int
-    llm_semantic_lint_enabled: bool
+    agent_max_assets_per_prompt: int
+    agent_max_chars_per_asset: int
     portfolio_key: str
     portfolio_root_title: str
     account_namespace_key: str
@@ -141,7 +136,7 @@ def build_config(root: Path | None = None) -> AppConfig:
     state_dir = _resolve(repo_root, merged["paths"]["state_dir"])
     build_dir = knowledge_root / "build"
     portfolio_cfg = merged["portfolio"]
-    llm_cfg = merged.get("llm", {}) or {}
+    agent_cfg = merged.get("agent_synthesis", {}) or {}
 
     namespace_payloads = {key: value for key, value in (merged.get("namespaces", {}) or {}).items()}
     project_payloads = merged.get("projects", {}) or {}
@@ -171,13 +166,8 @@ def build_config(root: Path | None = None) -> AppConfig:
         text_scan_suffixes=set(merged["scope"]["text_scan_suffixes"]),
         excluded_prefixes=tuple(merged["scope"]["excluded_prefixes"]),
         markdown_safe_page_types=set(merged["sync"]["markdown_safe_page_types"]),
-        llm_provider=str(llm_cfg.get("provider", "disabled")),
-        llm_model=str(llm_cfg.get("model", "gpt-5.4-mini")),
-        llm_command=str(llm_cfg.get("command", "")),
-        llm_timeout_seconds=int(llm_cfg.get("timeout_seconds", 180)),
-        llm_max_assets_per_prompt=int(llm_cfg.get("max_assets_per_prompt", 6)),
-        llm_max_chars_per_asset=int(llm_cfg.get("max_chars_per_asset", 3500)),
-        llm_semantic_lint_enabled=bool(llm_cfg.get("semantic_lint_enabled", True)),
+        agent_max_assets_per_prompt=int(agent_cfg.get("max_assets_per_prompt", 6)),
+        agent_max_chars_per_asset=int(agent_cfg.get("max_chars_per_asset", 3500)),
         portfolio_key=str(portfolio_cfg["portfolio_key"]),
         portfolio_root_title=str(portfolio_cfg["portfolio_root_title"]),
         account_namespace_key=str(portfolio_cfg["account_namespace_key"]),

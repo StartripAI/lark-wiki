@@ -7,11 +7,15 @@ import sqlite3
 from .config import AppConfig
 from .db import has_cross_scope_edge, record_issue
 from .lark_cli import docs_fetch_full
-from .llm_compile import semantic_lint_namespace
+from .llm_compile import detect_claim_contradictions
 from .markdown import normalize_markdown_for_sync, read_frontmatter
 from .ops_base import OPS_TABLE_SPECS, compute_ops_base_state
 from .portfolio import namespaced_page_id
 from .utils import relative_to_root
+
+
+def _is_generated_query_page(page_id: str) -> bool:
+    return "::query-" in page_id or page_id.endswith("::query")
 
 
 def lint(conn: sqlite3.Connection, config: AppConfig, namespace_key: str | None = None) -> dict[str, object]:
@@ -48,9 +52,11 @@ def lint(conn: sqlite3.Connection, config: AppConfig, namespace_key: str | None 
     title_map: dict[str, list[str]] = defaultdict(list)
     incoming: Counter[str] = Counter()
     page_ids = {row["page_id"] for row in pages}
+    page_bodies: list[dict[str, str]] = []
     for row in pages:
         path = config.root / row["local_path"]
-        frontmatter, _ = read_frontmatter(path)
+        frontmatter, body = read_frontmatter(path)
+        page_bodies.append({"page_id": row["page_id"], "body": body})
         title_map[frontmatter.get("title", row["page_id"])].append(row["page_id"])
         for source_id in frontmatter.get("source_ids", []):
             source_row = conn.execute("SELECT asset_key, namespace_key FROM assets WHERE asset_key = ?", (source_id,)).fetchone()
@@ -114,6 +120,8 @@ def lint(conn: sqlite3.Connection, config: AppConfig, namespace_key: str | None 
             namespaced_page_id(namespace_key, "index"),
             namespaced_page_id(namespace_key, "log"),
         }:
+            continue
+        if _is_generated_query_page(str(row["page_id"])):
             continue
         if incoming[row["page_id"]] == 0:
             record_issue(conn, issue_type="orphan_page", severity="medium", page_id=row["page_id"], namespace_key=namespace_key, detail={"page_id": row["page_id"]})
@@ -206,39 +214,15 @@ def lint(conn: sqlite3.Connection, config: AppConfig, namespace_key: str | None 
                 },
             )
 
-    semantic_findings = semantic_lint_namespace(conn, config, namespace_key=namespace_key)
-    for finding in semantic_findings.get("contradictions", []) or []:
+    # Deterministic, provider-free contradiction check. Deeper semantic review
+    # (stale claims, missing pages) is the host IDE agent's job per AGENTS.md;
+    # this tool never calls a model.
+    for finding in detect_claim_contradictions(page_bodies):
         record_issue(
             conn,
             issue_type="semantic_contradiction",
             severity="high",
-            page_id=str(finding.get("page_ids", "")).split(",")[0].strip() or None,
-            namespace_key=namespace_key,
-            detail=finding,
-        )
-    for finding in semantic_findings.get("stale_claims", []) or []:
-        record_issue(
-            conn,
-            issue_type="semantic_stale_claim",
-            severity="medium",
-            page_id=str(finding.get("page_ids", "")).split(",")[0].strip() or None,
-            namespace_key=namespace_key,
-            detail=finding,
-        )
-    for finding in semantic_findings.get("missing_pages", []) or []:
-        record_issue(
-            conn,
-            issue_type="semantic_missing_page",
-            severity="medium",
-            namespace_key=namespace_key,
-            detail=finding,
-        )
-    for finding in semantic_findings.get("missing_cross_references", []) or []:
-        record_issue(
-            conn,
-            issue_type="semantic_missing_cross_reference",
-            severity="medium",
-            page_id=str(finding.get("page_ids", "")).split(",")[0].strip() or None,
+            page_id=finding["page_ids"].split(",")[0].strip() or None,
             namespace_key=namespace_key,
             detail=finding,
         )

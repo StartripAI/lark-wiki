@@ -65,13 +65,63 @@ def create_or_update_doc(
 ) -> tuple[str, str, str]:
     resolved_doc_token = mirror_doc_token or _doc_token_from_node(config, existing_node_token)
     if resolved_doc_token:
-        payload = run_lark(config, ["docs", "+update", "--as", "user", "--doc", resolved_doc_token, "--mode", "overwrite", "--new-title", title, "--markdown", markdown])
+        payload = run_lark(
+            config,
+            [
+                "docs",
+                "+update",
+                "--api-version",
+                "v2",
+                "--as",
+                "user",
+                "--doc",
+                resolved_doc_token,
+                "--command",
+                "overwrite",
+                "--doc-format",
+                "markdown",
+                "--content",
+                markdown,
+            ],
+        )
     elif existing_node_token:
         raise RuntimeError(f"Unable to resolve existing document token from bound node: {existing_node_token}")
     elif parent_node_token:
-        payload = run_lark(config, ["docs", "+create", "--as", "user", "--wiki-node", parent_node_token, "--title", title, "--markdown", markdown])
+        payload = run_lark(
+            config,
+            [
+                "docs",
+                "+create",
+                "--api-version",
+                "v2",
+                "--as",
+                "user",
+                "--parent-token",
+                parent_node_token,
+                "--doc-format",
+                "markdown",
+                "--content",
+                markdown,
+            ],
+        )
     else:
-        payload = run_lark(config, ["docs", "+create", "--as", "user", "--wiki-space", config.lark_wiki_space, "--title", title, "--markdown", markdown])
+        payload = run_lark(
+            config,
+            [
+                "docs",
+                "+create",
+                "--api-version",
+                "v2",
+                "--as",
+                "user",
+                "--parent-position",
+                "my_library",
+                "--doc-format",
+                "markdown",
+                "--content",
+                markdown,
+            ],
+        )
     url = pick_first(payload, [["data", "document", "url"], ["data", "docx", "url"], ["data", "doc_url"], ["data", "url"], ["data", "node", "url"]])
     doc_token = pick_first(payload, [["data", "document", "document_id"], ["data", "docx", "document_id"], ["data", "doc_id"], ["data", "token"]])
     node_token = pick_first(payload, [["data", "node", "node_token"], ["data", "node", "obj_token"], ["data", "node_token"]])

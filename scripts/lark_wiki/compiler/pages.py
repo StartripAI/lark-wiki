@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import csv
+import re
 import sqlite3
 import textwrap
 from pathlib import Path
 
 from ..config import AppConfig
 from ..db import upsert_asset, upsert_page
-from ..llm_compile import compile_page_markdown
-from ..markdown import write_canonical_page
+from ..llm_compile import agent_synthesis_task, compile_page_markdown, detect_claim_contradictions
+from ..markdown import read_frontmatter, write_canonical_page
 from ..portfolio import namespace_root_relpath, namespaced_page_id, page_asset_key
-from ..utils import relative_to_root, sha256_text
+from ..utils import read_text_safe, relative_to_root, sha256_text
 
 
 def master_rows(config: AppConfig) -> list[dict[str, str]]:
@@ -126,6 +127,122 @@ def _maybe_append_llm_synthesis(
     if not compiled:
         return body
     return f"{body.rstrip()}\n\n## LLM Synthesis\n\n{compiled}\n"
+
+
+_SOURCE_CLAIM = re.compile(r"Claim:\s*(.+?)\s*=>\s*(.+)")
+_TEXT_SUFFIXES = {".md", ".markdown", ".txt", ".csv", ".json", ".html"}
+
+
+def _source_text(conn: sqlite3.Connection, config: AppConfig, asset_key: str) -> str:
+    row = conn.execute("SELECT local_path, title FROM assets WHERE asset_key = ?", (asset_key,)).fetchone()
+    if not row:
+        return ""
+    local_path = str(row["local_path"] or "")
+    if local_path:
+        path = config.root / local_path
+        if path.exists() and path.suffix.lower() in _TEXT_SUFFIXES:
+            return read_text_safe(path)
+    return str(row["title"] or "")
+
+
+def _slugify_asset(asset_key: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", asset_key.lower()).strip("-")
+    return slug[:60] or "source"
+
+
+def compile_sources(conn: sqlite3.Connection, config: AppConfig, *, namespace_key: str) -> dict[str, object]:
+    """Karpathy-style compile step: turn each raw source into a synthesized,
+    interlinked summary page with an agent task block, lift its claims into the
+    wiki, then scan the whole namespace for cross-page contradictions. This is
+    the ingest-time "compounding" loop, not a one-off hand authoring."""
+    rows = conn.execute(
+        "SELECT asset_key, title FROM assets "
+        "WHERE namespace_key = ? AND classification_status = 'classified' "
+        "AND asset_key NOT LIKE 'PAGE::%' ORDER BY asset_key",
+        (namespace_key,),
+    ).fetchall()
+    hub_pid = namespaced_page_id(namespace_key, "source-summaries")
+    summary_pids: list[str] = []
+    generated: list[str] = []
+    seen_short: set[str] = set()
+    for row in rows:
+        asset_key = str(row["asset_key"])
+        text = _source_text(conn, config, asset_key)
+        synthesis = compile_page_markdown(
+            conn,
+            config,
+            namespace_key=namespace_key,
+            title=str(row["title"] or asset_key),
+            page_type="Summary",
+            base_body=text,
+            source_ids=[asset_key],
+        ).strip()
+        claim_lines = [f"Claim: {m.group(1).strip()} => {m.group(2).strip()}" for m in _SOURCE_CLAIM.finditer(text)]
+        if not synthesis and not claim_lines:
+            continue
+        short_id = f"source-summary-{_slugify_asset(asset_key)}"
+        if short_id in seen_short:
+            continue
+        seen_short.add(short_id)
+        title = f"Source Summary: {row['title'] or asset_key}"
+        parts = [f"# {title}", "", f"> **Source:** `{asset_key}`", ""]
+        if claim_lines:
+            parts += ["## Claims (lifted from source)", "", *claim_lines, ""]
+        parts += ["## Synthesis", "", synthesis or agent_synthesis_task(title=title, source_keys=[asset_key])]
+        generated.append(
+            _write_namespace_page(
+                conn,
+                config,
+                namespace_key=namespace_key,
+                short_id=short_id,
+                title=title,
+                page_type="Summary",
+                rel_path=_namespace_relpath(config, namespace_key, f"summaries/{short_id}.md"),
+                source_ids=[asset_key],
+                links_to=[hub_pid],
+                body="\n".join(parts),
+            )
+        )
+        summary_pids.append(namespaced_page_id(namespace_key, short_id))
+    if summary_pids:
+        hub_lines = [
+            "# Source Summaries",
+            "",
+            f"Compiled summaries of {len(summary_pids)} raw source(s) in `{namespace_key}`.",
+            "",
+            *[f"- [[{pid}]]" for pid in summary_pids],
+        ]
+        generated.append(
+            _write_namespace_page(
+                conn,
+                config,
+                namespace_key=namespace_key,
+                short_id="source-summaries",
+                title="Source Summaries",
+                page_type="Concept",
+                rel_path=_namespace_relpath(config, namespace_key, "concepts/source_summaries.md"),
+                source_ids=[],
+                links_to=[*summary_pids, namespaced_page_id(namespace_key, "index")],
+                body="\n".join(hub_lines),
+            )
+        )
+    page_rows = conn.execute(
+        "SELECT page_id, local_path FROM pages WHERE namespace_key = ?", (namespace_key,)
+    ).fetchall()
+    page_bodies: list[dict[str, str]] = []
+    for page_row in page_rows:
+        _, body = read_frontmatter(config.root / str(page_row["local_path"]))
+        page_bodies.append({"page_id": page_row["page_id"], "body": body})
+    contradictions = detect_claim_contradictions(page_bodies)
+    conn.commit()
+    return {
+        "namespace_key": namespace_key,
+        "compiled_source_count": len(summary_pids),
+        "summary_pages": summary_pids,
+        "hub_page": hub_pid if summary_pids else "",
+        "contradiction_count": len(contradictions),
+        "contradictions": contradictions,
+    }
 
 
 def _ingest_account(conn: sqlite3.Connection, config: AppConfig) -> dict[str, object]:
@@ -260,8 +377,14 @@ def _ingest_generic_namespace(conn: sqlite3.Connection, config: AppConfig, names
             body=f"# {namespace.display_name} Asset Inventory\n",
         ),
     ]
+    compile_result = compile_sources(conn, config, namespace_key=namespace_key)
     conn.commit()
-    return {"generated_pages": generated, "page_count": len(generated), "namespace_key": namespace_key}
+    return {
+        "generated_pages": generated,
+        "page_count": len(generated),
+        "namespace_key": namespace_key,
+        "compile": compile_result,
+    }
 
 
 def _ingest_agent_workspace(conn: sqlite3.Connection, config: AppConfig, namespace_key: str) -> dict[str, object]:
@@ -465,7 +588,7 @@ def _ingest_agent_workspace(conn: sqlite3.Connection, config: AppConfig, namespa
         - local assets registered: **{counts['local_files']}**
         - docs registry available: **{'yes' if docs_source_ids else 'not yet'}**
         - base registry available: **{'yes' if base_source_ids else 'not yet'}**
-        - LLM synthesis can run when `provider != disabled`
+        - agent synthesis task blocks present for IDE review: **yes**
         """
     ).strip()
 
@@ -525,8 +648,14 @@ def _ingest_agent_workspace(conn: sqlite3.Connection, config: AppConfig, namespa
                 body=compiled_body,
             )
         )
+    compile_result = compile_sources(conn, config, namespace_key=namespace_key)
     conn.commit()
-    return {"generated_pages": generated, "page_count": len(generated), "namespace_key": namespace_key}
+    return {
+        "generated_pages": generated,
+        "page_count": len(generated),
+        "namespace_key": namespace_key,
+        "compile": compile_result,
+    }
 
 
 def ingest(conn: sqlite3.Connection, config: AppConfig, namespace_key: str | None = None) -> dict[str, object]:
