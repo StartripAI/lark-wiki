@@ -29,6 +29,21 @@ def _asset_rows(conn: sqlite3.Connection, namespace_key: str) -> list[dict[str, 
     ]
 
 
+def _keyword_match(blob_lower: str, keyword: str) -> bool:
+    """Match if the full keyword OR every whitespace-separated token appears.
+
+    Pure substring match makes multi-word queries (e.g. "MySQL 落表 数据模型")
+    miss every page because the exact phrase never occurs. Falling back to
+    AND-of-tokens across the combined haystack fixes natural multi-word queries
+    without the over-matching of a pure OR. Single-token queries are unchanged.
+    """
+    needle = keyword.lower()
+    if needle in blob_lower:
+        return True
+    tokens = [tok for tok in needle.split() if tok]
+    return len(tokens) > 1 and all(tok in blob_lower for tok in tokens)
+
+
 def _asset_matches(config: AppConfig, row: dict[str, object], keyword: str) -> bool:
     haystacks = [row.get("title"), row.get("local_path"), row.get("remote_url"), row.get("metadata_json")]
     local_path = str(row.get("local_path") or "")
@@ -36,7 +51,8 @@ def _asset_matches(config: AppConfig, row: dict[str, object], keyword: str) -> b
         full_path = config.root / local_path
         if full_path.exists() and full_path.suffix.lower() in {".md", ".json", ".txt", ".csv"}:
             haystacks.append(read_text_safe(full_path))
-    return any(keyword.lower() in str(text or "").lower() for text in haystacks)
+    blob = " ".join(str(text or "") for text in haystacks).lower()
+    return _keyword_match(blob, keyword)
 
 
 def _is_generated_query_asset_row(row: dict[str, object]) -> bool:
@@ -103,11 +119,11 @@ def _page_rows(conn: sqlite3.Connection, config: AppConfig, namespace_key: str) 
 
 
 def _page_matches(row: dict[str, object], keyword: str) -> bool:
-    needle = keyword.lower()
-    return any(
-        needle in str(value or "").lower()
+    blob = " ".join(
+        str(value or "")
         for value in (row.get("title"), row.get("local_path"), row.get("page_type"), row.get("body"))
-    )
+    ).lower()
+    return _keyword_match(blob, keyword)
 
 
 def _is_generated_query_row(row: dict[str, object]) -> bool:
